@@ -1,0 +1,202 @@
+
+; ******** Source: /home/tex/C64/Projects/Hero/src/main.asm
+     1                          ;
+     2                          ; Hero
+     3                          ;
+     4                          
+     5                          *= $2000
+     6  2000 000000000000003c...!bin "../resources/sprites.bin"
+     7                          
+     8                          *= $2800
+     9  2800 0000000000000000...!bin "../resources/chars.bin"
+    10                          
+    11                          *= $8000
+    12  8000 2828282828282828...!bin "../resources/room.bin"
+    13                          
+    14                          
+    15                          *=$0801
+    16  0801 0c08b5079e203230...!byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
+    17  080e 4c1108             jmp main
+    18                          
+    19                          ; Constants
+    20                          
+    21                          main
+    22                          
+    23                              ; set font at $2800
+    24  0811 ad18d0                 LDA $D018	   
+    25  0814 29f1                   AND #$F1  
+    26  0816 090a                   ORA #$0A 
+    27  0818 8d18d0                 STA $D018   
+    28                          
+    29  081b 200209                 JSR .f_clear
+    30                          
+    31                              ; load sprite 
+    32  081e a981                   LDA #$81
+    33  0820 8df807                 STA $07f8
+    34                                  
+    35                              ; Configure sprite colors
+    36  0823 a901                   LDA #$01         ; Set sprite color to white (color index 15)
+    37  0825 8d27d0                 STA $D027        ; Store color information for sprite 0
+    38                          
+    39                              ; Enable high-resolution mode for sprite 0
+    40  0828 ad1cd0                 LDA $D01C        ; Load current value from VIC-II Control Register 4
+    41  082b 29fe                   AND #%11111110   ; Set bit 0 to 0 for sprite 0 high res
+    42  082d 8d1cd0                 STA $D01C        ; Store modified value back to Control Register 4
+    43                          
+    44                              ; Enable sprites
+    45  0830 ad15d0                 LDA $D015        ; Load current value from Control Register 4
+    46  0833 0901                   ORA #%00000001   ; Set bit 0 to enable sprites
+    47  0835 8d15d0                 STA $D015        ; Store modified value back to Control Register 4
+    48                          
+    49                              ; Sprite position
+    50  0838 a980                   LDA #$80
+    51  083a 8d00d0                 STA $D000    
+    52  083d 8d01d0                 STA $D001
+    53                          
+    54                              ; Print room
+    55  0840 a900                   LDA #$00
+    56  0842 aa                     TAX
+    57                          
+    58                          screen_loop
+    59  0843 bd0080                 LDA $8000, x
+    60  0846 9d0004                 STA $0400, x
+    61  0849 bd0081                 LDA $8100, x
+    62  084c 9d0005                 STA $0500, x
+    63  084f bd0082                 LDA $8200, x
+    64  0852 9d0006                 STA $0600, x
+    65  0855 e0e8                   CPX #$E8
+    66  0857 b006                   BCS last_line
+    67  0859 bd0083                 LDA $8300, x
+    68  085c 9d0007                 STA $0700, x
+    69                          last_line
+    70  085f ca                     DEX
+    71  0860 d0e1                   BNE screen_loop
+    72                              
+    73  0862 206808                 JSR .f_set_irq
+    74                          
+    75  0865 4c6508                 JMP *
+    76                          
+    77                          .f_set_irq		
+    78  0868 78                     sei			
+    79                          
+    80                              ; How to speed up interrupts disabling kernel
+    81                              ; https://codebase64.org/doku.php?id=base:speeding_up_and_optimising_demo_routines
+    82                              ; disable kernel
+    83                              ; lda #$35
+    84                              ; sta $01  
+    85                          
+    86                              ; disable CIA  interrupt
+    87  0869 a97f                   lda #$7f
+    88  086b 8d0ddc                 sta $dc0d
+    89  086e 8d0ddd                 sta $dd0d			           	
+    90  0871 ad0ddc                 lda $dc0d
+    91  0874 ad0ddd                 lda $dd0d           	
+    92                          
+    93                              ; enable VIC-II to generate raster interrupts              
+    94  0877 a901                   lda #$01
+    95  0879 8d1ad0                 sta $d01a
+    96                          
+    97                              ; raster line extra bit is msb in $d011
+    98  087c ad11d0                 lda $d011
+    99  087f 297f                   and #$7f
+   100  0881 8d11d0                 sta $d011
+   101                              ; raster line
+   102  0884 a920                   lda #$20
+   103  0886 8d12d0                 sta $d012		
+   104                              							        
+   105  0889 a995                   lda #<.f_play_irq
+   106  088b a208                   ldx #>.f_play_irq
+   107  088d 8d1403                 sta $0314
+   108  0890 8e1503                 stx $0315
+   109                                      
+   110  0893 58                     cli			
+   111  0894 60                     rts
+   112                          
+   113                          .f_play_irq	
+   114                              
+   115                              ; imposta la modalità 40 colonne, azzerando i registri di scroll
+   116  0895 ad16d0                 LDA $d016
+   117  0898 0908                   ORA #$08
+   118  089a 29f8                   AND #$f8
+   119  089c 8d16d0                 STA $d016
+   120                          
+   121  089f 20e708                 JSR .f_draw_bar
+   122                          
+   123                                
+   124                              ; set interrupt as completer
+   125  08a2 ee19d0                 INC $d019                                                         		          
+   126                              ; set next interrupt
+   127  08a5 a945                   LDA #$45				
+   128  08a7 8d12d0                 STA $d012	
+   129  08aa a9b7                   LDA #<.f_main_irq
+   130  08ac a208                   LDX #>.f_main_irq
+   131  08ae 8d1403                 STA $0314
+   132  08b1 8e1503                 STX $0315
+   133  08b4 4c7eea                 JMP $ea7e
+   134                          
+   135                          
+   136                          
+   137                          .f_main_irq
+   138                              ; Interrupt code here
+   139  08b7 20e708                 JSR .f_draw_bar
+   140                          
+   141                              ; set interrupt as completed
+   142  08ba ee19d0                 INC $d019                                                         		          
+   143                              ; set next interrupt
+   144  08bd a9f0                   LDA #$f0				
+   145  08bf 8d12d0                 STA $d012	
+   146  08c2 a9cf                   LDA #<.f_end_irq
+   147  08c4 a208                   LDX #>.f_end_irq
+   148  08c6 8d1403                 STA $0314
+   149  08c9 8e1503                 STX $0315
+   150  08cc 4c7eea                 JMP $ea7e
+   151                          
+   152                              
+   153                          .f_end_irq        
+   154  08cf 20e708                 JSR .f_draw_bar
+   155                          
+   156                              ; set interrupt as completed
+   157  08d2 ee19d0                 INC $d019                                                         		          
+   158                              ; set next interrupt
+   159  08d5 a920                   LDA #$20				
+   160  08d7 8d12d0                 STA $d012	
+   161  08da a995                   LDA #<.f_play_irq
+   162  08dc a208                   LDX #>.f_play_irq
+   163  08de 8d1403                 STA $0314
+   164  08e1 8e1503                 STX $0315
+   165  08e4 4c7eea                 JMP $ea7e
+   166                          
+   167                          ; Functions
+   168                          .f_draw_bar		
+   169  08e7 a901                   LDA #1
+   170  08e9 ac12d0                 LDY $d012
+   171  08ec cc12d0                 CPY $d012
+   172  08ef f0fb                   BEQ *-3
+   173  08f1 8d20d0                 STA $d020
+   174                          
+   175  08f4 a900                   LDA #0
+   176  08f6 ac12d0                 LDY $d012
+   177  08f9 cc12d0                 CPY $d012
+   178  08fc f0fb                   BEQ *-3
+   179  08fe 8d20d0                 STA $d020
+   180                                
+   181  0901 60                     RTS
+   182                          
+   183                          .f_clear 
+   184  0902 a900                   LDA #$00
+   185  0904 8d20d0                 STA $d020
+   186  0907 8d21d0                 STA $d021   
+   187  090a aa                     TAX
+   188  090b a900                   LDA #$00 ; empy char from hero char-set
+   189                          clrloop 
+   190  090d 9d0004                 STA $0400,x
+   191  0910 9d0005                 STA $0500,x
+   192  0913 9d0006                 STA $0600,x
+   193  0916 e0e8                   CPX #$E8
+   194  0918 b006                   BCS clear_last_line
+   195  091a bd0083                 LDA $8300, x
+   196  091d 9d0007                 STA $0700, x
+   197                          clear_last_line
+   198  0920 ca                     DEX    
+   199  0921 d0ea                   BNE clrloop
+   200  0923 60                     RTS
