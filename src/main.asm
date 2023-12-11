@@ -8,8 +8,8 @@
 *= $2800
 !bin "../resources/chars.bin"
 
-*= $8000
-!bin "../resources/room.bin"
+*= $5000
+!bin "../resources/level_1.bin"
 
 
 *=$0801
@@ -55,16 +55,21 @@ main
     LDA #$00
     TAX
 
+level_width = $3
+level_heigh = $3
+room = $9
+room_address = $5000 + ((room - $1) * $3e8)
+
 screen_loop
-    LDA $8000, x
+    LDA room_address, x
     STA $0400, x
-    LDA $8100, x
+    LDA room_address + $100, x
     STA $0500, x
-    LDA $8200, x
+    LDA room_address + $200, x
     STA $0600, x
     CPX #$E8
     BCS last_line
-    LDA $8300, x
+    LDA room_address + $300, x
     STA $0700, x
 last_line
     DEX
