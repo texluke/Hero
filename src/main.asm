@@ -1,6 +1,7 @@
-;
+
 ; Hero C64
 ;
+
 
 *= $2000
 !bin "../resources/sprites.bin"
@@ -11,15 +12,30 @@
 *= $5000
 !bin "../resources/level_1.bin"
 
+; current_room
+;     !byte $00
+; current_room
+;     !byte $09
+
+
+; Symbols
+
+
+; !set new_room = $09
+
 
 *=$0801
 !byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
 jmp main
 
+
+
+
 ; Constants
 
-main
 
+
+main
     ; set font at $2800
     LDA $D018	   
     AND #$F1  
@@ -51,30 +67,8 @@ main
     STA $D000    
     STA $D001
 
-    ; Print room
-    LDA #$00
-    TAX
+       
 
-level_width = $3
-level_heigh = $3
-room = $9
-room_address = $5000 + ((room - $1) * $3e8)
-
-screen_loop
-    LDA room_address, x
-    STA $0400, x
-    LDA room_address + $100, x
-    STA $0500, x
-    LDA room_address + $200, x
-    STA $0600, x
-    CPX #$E8
-    BCS last_line
-    LDA room_address + $300, x
-    STA $0700, x
-last_line
-    DEX
-    BNE screen_loop
-    
     JSR .f_set_irq
 
     JMP *
@@ -123,38 +117,47 @@ last_line
     AND #$f8
     STA $d016
 
-    JSR .f_draw_bar
+    JSR .f_draw_bar    
+    
+    LDX refresh_room
+    CPX #$00
+    BEQ no_refres_needed
+    INC refresh_room    
+    JSR .f_draw_room    
 
-      
+no_refres_needed
+
+    JSR .f_get_joystick
+    CPX #$01    
+    BEQ hero_right
+    CPX #$FF    
+    BEQ hero_left
+    JMP hero_moved
+hero_right    
+    LDA $D000
+    ADC #$2
+    STA $D000
+    JMP hero_moved
+hero_left    
+    LDA $D000
+    SBC #$2
+    STA $D000
+    JMP hero_moved
+    
+    
+hero_moved
+
     ; set interrupt as completer
     INC $d019                                                         		          
     ; set next interrupt
-    LDA #$45				
-    STA $d012	
-    LDA #<.f_main_irq
-    LDX #>.f_main_irq
-    STA $0314
-    STX $0315
-    JMP $ea7e
-
-
-
-.f_main_irq
-    ; Interrupt code here
-    JSR .f_draw_bar
-
-    ; set interrupt as completed
-    INC $d019                                                         		          
-    ; set next interrupt
-    LDA #$f0				
+    LDA #$ff				
     STA $d012	
     LDA #<.f_end_irq
     LDX #>.f_end_irq
     STA $0314
     STX $0315
     JMP $ea7e
-
-    
+  
 .f_end_irq        
     JSR .f_draw_bar
 
@@ -181,8 +184,29 @@ last_line
     LDY $d012
     CPY $d012
     BEQ *-3
-    STA $d020
-      
+    STA $d020      
+    RTS
+
+.f_draw_room    
+    ; Print room
+    room_address = $5000 + ((current_room - $01) * $3e8)
+
+    LDA #$00
+    TAX
+draw_room_loop
+    LDA room_address, x
+    STA $0400, x
+    LDA room_address + $100, x
+    STA $0500, x
+    LDA room_address + $200, x
+    STA $0600, x
+    CPX #$E8
+    BCS draw_room_last_line
+    LDA room_address + $300, x
+    STA $0700, x
+draw_room_last_line
+    DEX
+    BNE draw_room_loop
     RTS
 
 .f_clear 
@@ -203,3 +227,40 @@ clear_last_line
     DEX    
     BNE clrloop
     RTS
+
+.f_get_joystick
+
+
+djrr    lda $dc00     ; get input from port 2 only
+djrrb   ldy #0        ; this routine reads and decodes the
+        ldx #0        ; joystick/firebutton input data in
+        lsr           ; the accumulator. this least significant
+        bcs djr0      ; 5 bits contain the switch closure
+        dey           ; information. if a switch is closed then it
+djr0    lsr           ; produces a zero bit. if a switch is open then
+        bcs djr1      ; it produces a one bit. The joystick dir-
+        iny           ; ections are right, left, forward, backward
+djr1    lsr           ; bit3=right, bit2=left, bit1=backward,
+        bcs djr2      ; bit0=forward and bit4=fire button.
+        dex           ; at rts time dx and dy contain 2's compliment
+djr2    lsr           ; direction numbers i.e. $ff=-1, $00=0, $01=1.
+        bcs djr3      ; dx=1 (move right), dx=-1 (move left),
+        inx           ; dx=0 (no x change). dy=-1 (move up screen),
+djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
+        stx dx        ; the forward joystick position corresponds
+        sty dy        ; to move up the screen and the backward
+        rts           ; position to move down screen.
+                      ;
+
+refresh_room  ; set to $01 if screen need to be refreshed
+    !byte $01
+
+dx 
+    !byte $00
+dy 
+    !byte $01
+
+; Symbols
+!set current_room = $09
+!set level_width = $03
+!set level_heigh = $03    
