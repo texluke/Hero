@@ -132,20 +132,32 @@ no_refres_needed
     BEQ hero_right
     CPX #$FF    
     BEQ hero_left
-    JMP hero_moved
+    JMP hero_moved_left_right
 hero_right    
     LDA $D000
     ADC #$2
     STA $D000
-    JMP hero_moved
+    JMP hero_moved_left_right
 hero_left    
     LDA $D000
     SBC #$2
-    STA $D000
-    JMP hero_moved
-    
-    
-hero_moved
+    STA $D000    
+hero_moved_left_right
+    CPY #$01    
+    BEQ hero_down
+    CPY #$FF    
+    BEQ hero_up
+    JMP hero_moved_up_down
+hero_down    
+    LDA $D001
+    ADC #$2
+    STA $D001
+    JMP hero_moved_up_down
+hero_up    
+    LDA $D001
+    SBC #$2
+    STA $D001   
+hero_moved_up_down
 
     ; set interrupt as completer
     INC $d019                                                         		          
