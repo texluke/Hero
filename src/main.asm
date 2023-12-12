@@ -29,11 +29,7 @@
 jmp main
 
 
-
-
-; Constants
-
-
+!set debug = $01
 
 main
     ; set font at $2800
@@ -101,70 +97,52 @@ main
     lda #$20
     sta $d012		
     							        
-    lda #<.f_play_irq
-    ldx #>.f_play_irq
+    lda #<.f_game_irq
+    ldx #>.f_game_irq
     sta $0314
     stx $0315
             
     cli			
     rts
 
-.f_play_irq	
+.f_game_irq	
     
     ; imposta la modalità 40 colonne, azzerando i registri di scroll
-    LDA $d016
-    ORA #$08
-    AND #$f8
-    STA $d016
+    
+    ; LDA $d016
+    ; ORA #$08
+    ; AND #$f8
+    ; STA $d016
 
-    JSR .f_draw_bar    
+    ; set interrupt as consumed
+    INC $d019                  
+
+    ; JSR .f_draw_bar        
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #1
+        STA $d020
+    }
     
     LDX refresh_room
     CPX #$00
     BEQ no_refres_needed
-    INC refresh_room    
-    JSR .f_draw_room    
+    DEC refresh_room    
+    JSR .f_draw_room 
 
 no_refres_needed
+    JSR .f_move_hero
 
-    JSR .f_get_joystick
-    CPX #$01    
-    BEQ hero_right
-    CPX #$FF    
-    BEQ hero_left
-    JMP hero_moved_left_right
-hero_right    
-    LDA $D000
-    CLC
-    ADC #$2    
-    STA $D000
-    JMP hero_moved_left_right
-hero_left    
-    LDA $D000
-    SEC
-    SBC #$2
-    STA $D000    
-hero_moved_left_right
-    CPY #$01    
-    BEQ hero_down
-    CPY #$FF    
-    BEQ hero_up
-    JMP hero_moved_up_down
-hero_down    
-    LDA $D001
-    CLC
-    ADC #$2
-    STA $D001
-    JMP hero_moved_up_down
-hero_up    
-    LDA $D001
-    SEC
-    SBC #$2
-    STA $D001   
-hero_moved_up_down
-
-    ; set interrupt as completer
-    INC $d019                                                         		          
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #0
+        STA $d020
+    }
+                                           		          
     ; set next interrupt
     LDA #$ff				
     STA $d012	
@@ -172,6 +150,7 @@ hero_moved_up_down
     LDX #>.f_end_irq
     STA $0314
     STX $0315
+    
     JMP $ea7e
   
 .f_end_irq        
@@ -182,8 +161,8 @@ hero_moved_up_down
     ; set next interrupt
     LDA #$20				
     STA $d012	
-    LDA #<.f_play_irq
-    LDX #>.f_play_irq
+    LDA #<.f_game_irq
+    LDX #>.f_game_irq
     STA $0314
     STX $0315
     JMP $ea7e
@@ -244,9 +223,45 @@ clear_last_line
     BNE clrloop
     RTS
 
+.f_move_hero
+    JSR .f_get_joystick
+    CPX #$01    
+    BEQ hero_right
+    CPX #$FF    
+    BEQ hero_left
+    JMP hero_moved_left_right
+hero_right    
+    LDA $D000
+    CLC
+    ADC #$2    
+    STA $D000
+    JMP hero_moved_left_right
+hero_left    
+    LDA $D000
+    SEC
+    SBC #$2
+    STA $D000    
+hero_moved_left_right
+    CPY #$01    
+    BEQ hero_down
+    CPY #$FF    
+    BEQ hero_up
+    JMP hero_moved_up_down
+hero_down    
+    LDA $D001
+    CLC
+    ADC #$2
+    STA $D001
+    JMP hero_moved_up_down
+hero_up    
+    LDA $D001
+    SEC
+    SBC #$2
+    STA $D001   
+hero_moved_up_down
+    RTS
+
 .f_get_joystick
-
-
 djrr    lda $dc00     ; get input from port 2 only
 djrrb   ldy #0        ; this routine reads and decodes the
         ldx #0        ; joystick/firebutton input data in
@@ -268,6 +283,7 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
         rts           ; position to move down screen.
                       ;
 
+; Variables
 refresh_room  ; set to $01 if screen need to be refreshed
     !byte $01
 
@@ -280,3 +296,4 @@ dy
 !set current_room = $09
 !set level_width = $03
 !set level_heigh = $03    
+
