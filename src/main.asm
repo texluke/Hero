@@ -135,11 +135,13 @@ no_refres_needed
     JMP hero_moved_left_right
 hero_right    
     LDA $D000
-    ADC #$2
+    CLC
+    ADC #$2    
     STA $D000
     JMP hero_moved_left_right
 hero_left    
     LDA $D000
+    SEC
     SBC #$2
     STA $D000    
 hero_moved_left_right
@@ -150,11 +152,13 @@ hero_moved_left_right
     JMP hero_moved_up_down
 hero_down    
     LDA $D001
+    CLC
     ADC #$2
     STA $D001
     JMP hero_moved_up_down
 hero_up    
     LDA $D001
+    SEC
     SBC #$2
     STA $D001   
 hero_moved_up_down
