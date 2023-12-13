@@ -63,8 +63,6 @@ main
     STA $D000    
     STA $D001
 
-       
-
     JSR .f_set_irq
 
     JMP *
@@ -222,8 +220,12 @@ clear_last_line
     DEX    
     BNE clrloop
     RTS
-
 .f_move_hero
+    ; LDA $d01f
+    ; LSR
+    ; BCC nobcollision
+	; RTS
+nobcollision
     JSR .f_get_joystick
     CPX #$01    
     BEQ hero_right
@@ -291,6 +293,12 @@ dx
     !byte $00
 dy 
     !byte $01
+
+border_with_y
+    !byte $50
+
+border_with_x
+    !byte $20
 
 ; Symbols
 !set current_room = $09
