@@ -63,6 +63,9 @@ main
     STA $D000    
     STA $D001
 
+    LDA $D01A
+    LDA $D019
+
     JSR .f_set_irq
 
     JMP *
@@ -112,9 +115,7 @@ main
     ; AND #$f8
     ; STA $d016
 
-    ; set interrupt as consumed
-    INC $d019                  
-
+                      
     ; JSR .f_draw_bar        
     !ifdef debug {
         LDY $d012
@@ -149,13 +150,14 @@ no_refres_needed
     STA $0314
     STX $0315
     
+    ; reset interrupt
+    ASL $d019        
+
     JMP $ea7e
   
 .f_end_irq        
     JSR .f_draw_bar
-
-    ; set interrupt as completed
-    INC $d019                                                         		          
+                                          		          
     ; set next interrupt
     LDA #$20				
     STA $d012	
@@ -163,6 +165,10 @@ no_refres_needed
     LDX #>.f_game_irq
     STA $0314
     STX $0315
+
+    ; reset interrupt
+    ASL $d019        
+
     JMP $ea7e
 
 ; Functions
@@ -220,20 +226,32 @@ clear_last_line
     DEX    
     BNE clrloop
     RTS
+
 .f_move_hero    
+    LDX #$0
+    STX hero_moved
+    ; store initial hero position
+    LDA $D000
+    STA hero_intial_x
+    LDA $D001
+    STA hero_intial_y
+    ; read joystick
     JSR .f_get_joystick
+    ; move hero (if needed)
     CPX #$01    
     BEQ hero_right
     CPX #$FF    
     BEQ hero_left
     JMP hero_moved_left_right
 hero_right    
+    INC hero_moved
     LDA $D000
     CLC
     ADC #$2    
     STA $D000
     JMP hero_moved_left_right
 hero_left    
+    INC hero_moved
     LDA $D000
     SEC
     SBC #$2
@@ -245,23 +263,38 @@ hero_moved_left_right
     BEQ hero_up
     JMP hero_moved_up_down
 hero_down    
+    INC hero_moved
     LDA $D001
     CLC
     ADC #$2
     STA $D001
     JMP hero_moved_up_down
-hero_up    
+hero_up
+    INC hero_moved
     LDA $D001
     SEC
     SBC #$2
     STA $D001   
 hero_moved_up_down
     ; check only if hero has been moved
-    LDA $d01f
+    LDX hero_moved
+    CPX #$00
+    BEQ nobcollision
+    LDA $d01f    
     LDX $d01f
     LSR
     BCC nobcollision
-    LDA $d01f	
+    ; restore hero position before collision
+    LDA $D000
+    LDA $D001
+    LDA hero_intial_x
+    STA $D000
+    LDA hero_intial_y
+    STA $D001
+    LDA $D000
+    LDA $D001
+    ; reset interrupt
+    ASL $d019        
 nobcollision
     RTS
 
@@ -298,8 +331,15 @@ dy
 
 hero_intial_x
     !byte $00
+
+hero_intial_x_msb
+    !byte $00
+
 hero_intial_y
     !byte $01
+
+hero_moved
+    !byte $00
 
 border_with_y
     !byte $50
@@ -307,8 +347,22 @@ border_with_y
 border_with_x
     !byte $20
 
+
+
 ; Symbols
 !set current_room = $09
 !set level_width = $03
 !set level_heigh = $03    
 
+SCRN  = $0400
+ScreenRAMRowTableLow
+        !byte <SCRN+(40*00),<SCRN+(40*01),<SCRN+(40*02),<SCRN+(40*03),<SCRN+(40*04),<SCRN+(40*05),<SCRN+(40*06),<SCRN+(40*07)
+        !byte <SCRN+(40*08),<SCRN+(40*09),<SCRN+(40*10),<SCRN+(40*11),<SCRN+(40*12),<SCRN+(40*13),<SCRN+(40*14),<SCRN+(40*15)
+        !byte <SCRN+(40*16),<SCRN+(40*17),<SCRN+(40*18),<SCRN+(40*19),<SCRN+(40*20),<SCRN+(40*21),<SCRN+(40*22),<SCRN+(40*23)
+        !byte <SCRN+(40*24)
+
+ScreenRAMRowTableHigh
+        !byte >SCRN+(40*00),>SCRN+(40*01),>SCRN+(40*02),>SCRN+(40*03),>SCRN+(40*04),>SCRN+(40*05),>SCRN+(40*06),>SCRN+(40*07)
+        !byte >SCRN+(40*08),>SCRN+(40*09),>SCRN+(40*10),>SCRN+(40*11),>SCRN+(40*12),>SCRN+(40*13),>SCRN+(40*14),>SCRN+(40*15)
+        !byte >SCRN+(40*16),>SCRN+(40*17),>SCRN+(40*18),>SCRN+(40*19),>SCRN+(40*20),>SCRN+(40*21),>SCRN+(40*22),>SCRN+(40*23)
+        !byte >SCRN+(40*24)
