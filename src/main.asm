@@ -220,12 +220,7 @@ clear_last_line
     DEX    
     BNE clrloop
     RTS
-.f_move_hero
-    ; LDA $d01f
-    ; LSR
-    ; BCC nobcollision
-	; RTS
-nobcollision
+.f_move_hero    
     JSR .f_get_joystick
     CPX #$01    
     BEQ hero_right
@@ -261,6 +256,13 @@ hero_up
     SBC #$2
     STA $D001   
 hero_moved_up_down
+    ; check only if hero has been moved
+    LDA $d01f
+    LDX $d01f
+    LSR
+    BCC nobcollision
+    LDA $d01f	
+nobcollision
     RTS
 
 .f_get_joystick
@@ -292,6 +294,11 @@ refresh_room  ; set to $01 if screen need to be refreshed
 dx 
     !byte $00
 dy 
+    !byte $01
+
+hero_intial_x
+    !byte $00
+hero_intial_y
     !byte $01
 
 border_with_y
