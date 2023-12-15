@@ -36,7 +36,10 @@ main
     LDA $D018	   
     AND #$F1  
     ORA #$0A 
-    STA $D018   
+    STA $D018  
+    
+    LDA #$00
+    STA $dc00 
 
     JSR .f_clear
 
@@ -228,13 +231,25 @@ clear_last_line
     RTS
 
 .f_move_hero    
-    LDX #$0
+    LDX #$00
     STX hero_moved
     ; store initial hero position
     LDA $D000
     STA hero_intial_x
+    SEC
+    SBC border_with_x
+    LSR
+    LSR
+    LSR
+    STA hero_initial_column    
     LDA $D001
     STA hero_intial_y
+    SEC    
+    SBC border_with_y
+    LSR
+    LSR
+    LSR
+    STA hero_initial_row
     ; read joystick
     JSR .f_get_joystick
     ; move hero (if needed)
@@ -279,23 +294,32 @@ hero_moved_up_down
     ; check only if hero has been moved
     LDX hero_moved
     CPX #$00
-    BEQ nobcollision
-    LDA $d01f    
-    LDX $d01f
+    BEQ no_moved
+    LDA $d01f        
     LSR
     BCC nobcollision
+    JMP nobcollision
     ; restore hero position before collision
     LDA $D000
     LDA $D001
     LDA hero_intial_x
+    SBC #$5
     STA $D000
     LDA hero_intial_y
     STA $D001
     LDA $D000
     LDA $D001
-    ; reset interrupt
-    ASL $d019        
+    RTS    
 nobcollision
+    LDY hero_initial_column
+    LDX hero_initial_row
+    LDA ScreenRAMRowTableLow, x
+    STA $FB
+    LDA ScreenRAMRowTableHigh, x
+    STA $FC
+    LDA #$2E ;Character code
+    STA ($FB),y
+no_moved
     RTS
 
 .f_get_joystick
@@ -329,6 +353,12 @@ dx
 dy 
     !byte $01
 
+hero_facing
+    !byte $01 ; right
+
+hero_moved
+    !byte $00
+
 hero_intial_x
     !byte $00
 
@@ -336,17 +366,19 @@ hero_intial_x_msb
     !byte $00
 
 hero_intial_y
-    !byte $01
-
-hero_moved
     !byte $00
 
-border_with_y
-    !byte $50
+hero_initial_column
+    !byte $00
+
+hero_initial_row
+    !byte $00
 
 border_with_x
-    !byte $20
+    !byte $18
 
+border_with_y
+    !byte $25
 
 
 ; Symbols
