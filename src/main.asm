@@ -41,6 +41,7 @@ main
     LDA #$00
     STA $dc00 
 
+    JSR .f_set_color
     JSR .f_clear
 
     ; load sprite 
@@ -66,9 +67,8 @@ main
     STA $D000    
     STA $D001
 
-    LDA $D01A
-    LDA $D019
-
+    
+   
     JSR .f_set_irq
 
     JMP *
@@ -228,6 +228,19 @@ clrloop
 clear_last_line
     DEX    
     BNE clrloop
+    RTS
+
+.f_set_color
+    LDA #1
+    LDX #0
+color_loop: 
+    STA $d800,x
+    STA $d800 + 250,x
+    STA $d800 + 500,x
+    STA $d800 + 750,x
+    INX
+    CPX #250
+    bne color_loop
     RTS
 
 .f_move_hero    
