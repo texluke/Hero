@@ -250,7 +250,7 @@ color_loop:
     LDA $D000
     STA hero_intial_x
     SEC
-    SBC border_with_x
+    SBC border_width_x
     LSR
     LSR
     LSR
@@ -258,7 +258,9 @@ color_loop:
     LDA $D001
     STA hero_intial_y
     SEC    
-    SBC border_with_y
+    SBC border_width_y
+    CLC
+    ADC #$0A ; center to hero sprite
     LSR
     LSR
     LSR
@@ -387,11 +389,11 @@ hero_initial_column
 hero_initial_row
     !byte $00
 
-border_with_x
+border_width_x
     !byte $18
 
-border_with_y
-    !byte $25
+border_width_y
+    !byte $32
 
 
 ; Symbols
