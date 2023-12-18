@@ -313,7 +313,7 @@ hero_moved_up_down
     ; check only if hero has been moved
     LDX hero_moved
     CPX #$00
-    BEQ no_moved
+    BEQ f_move_hero_end
     LDA $d01f        
     LSR
     BCC nobcollision
@@ -330,15 +330,28 @@ hero_moved_up_down
     LDA $D001
     RTS    
 nobcollision
+    ; handle jet pack smoking
     LDY hero_initial_column
     LDX hero_initial_row
+    LDA hero_facing_switched
+    CMP #$01
+    BEQ no_smoking
+    DEC hero_facing_switched
+    LDA hero_facing
+    CMP #$01
+    BEQ smoking
+    INY
+smoking
     LDA ScreenRAMRowTableLow, x
     STA $FB
     LDA ScreenRAMRowTableHigh, x
     STA $FC
-    LDA #$2E ;Character code
+    LDA #$2E ; char code for smoke
     STA ($FB),y
-no_moved
+    JMP f_move_hero_end
+no_smoking
+    DEC hero_facing_switched
+f_move_hero_end
     RTS
 
 .f_get_joystick
@@ -372,7 +385,8 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
     ; hero right
     LDA #$80
     STA $07f8
-    DEC hero_facing
+    DEC hero_facing    
+    INC hero_facing_switched
     ; update hero sprite
     JMP f_update_facing_end
 turn_right
@@ -383,6 +397,7 @@ turn_right
     LDA #$81
     STA $07f8
     INC hero_facing
+    INC hero_facing_switched
 f_update_facing_end
     RTS
 
@@ -397,6 +412,9 @@ dy
 
 hero_facing
     !byte $01 ; right
+
+hero_facing_switched
+    !byte $00
 
 hero_moved
     !byte $00
@@ -421,6 +439,15 @@ border_width_x
 
 border_width_y
     !byte $32
+
+smokes 
+    !byte $FF, $FF, $FF
+    !byte $FF, $FF, $FF
+    !byte $FF, $FF, $FF
+    !byte $FF, $FF, $FF
+    !byte $FF, $FF, $FF
+smoke_index
+    !byte $00
 
 ; Symbols
 !set current_room = $09
