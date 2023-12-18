@@ -211,7 +211,7 @@ draw_room_last_line
     BNE draw_room_loop
     RTS
 
-.f_clear 
+.f_clear    
     LDA #$00
     STA $d020
     STA $d021   
@@ -279,13 +279,17 @@ hero_right
     CLC
     ADC #$2    
     STA $D000
+    LDA #$01 ; facing right
+    JSR .f_update_facing
     JMP hero_moved_left_right
 hero_left    
     INC hero_moved
     LDA $D000
     SEC
     SBC #$2
-    STA $D000    
+    STA $D000   
+    LDA #$00 ; facing left
+    JSR .f_update_facing 
 hero_moved_left_right
     CPY #$01    
     BEQ hero_down
@@ -357,7 +361,30 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
         stx dx        ; the forward joystick position corresponds
         sty dy        ; to move up the screen and the backward
         rts           ; position to move down screen.
-                      ;
+
+.f_update_facing
+    CMP #$01
+    BEQ turn_right
+    ; turn left
+    LDA hero_facing 
+    CMP #$00
+    BEQ f_update_facing_end
+    ; hero right
+    LDA #$80
+    STA $07f8
+    DEC hero_facing
+    ; update hero sprite
+    JMP f_update_facing_end
+turn_right
+    LDA hero_facing
+    CMP #$01    
+    BEQ f_update_facing_end
+    ; hero left
+    LDA #$81
+    STA $07f8
+    INC hero_facing
+f_update_facing_end
+    RTS
 
 ; Variables
 refresh_room  ; set to $01 if screen need to be refreshed
@@ -394,7 +421,6 @@ border_width_x
 
 border_width_y
     !byte $32
-
 
 ; Symbols
 !set current_room = $09
