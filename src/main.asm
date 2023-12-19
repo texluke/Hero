@@ -334,9 +334,10 @@ nobcollision
     LDY hero_initial_column
     LDX hero_initial_row
     LDA hero_facing_switched
-    CMP #$01
+    CMP #$02    
     BEQ no_smoking
-    DEC hero_facing_switched
+    CMP #$01    
+    BEQ no_smoking
     LDA hero_facing
     CMP #$01
     BEQ smoking
@@ -350,6 +351,7 @@ smoking
     STA ($FB),y
     JMP f_move_hero_end
 no_smoking
+    ; two times
     DEC hero_facing_switched
 f_move_hero_end
     RTS
@@ -386,7 +388,8 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
     LDA #$80
     STA $07f8
     DEC hero_facing    
-    INC hero_facing_switched
+    LDA #$02
+    STA hero_facing_switched
     ; update hero sprite
     JMP f_update_facing_end
 turn_right
@@ -397,7 +400,8 @@ turn_right
     LDA #$81
     STA $07f8
     INC hero_facing
-    INC hero_facing_switched
+    LDA #$02
+    STA hero_facing_switched
 f_update_facing_end
     RTS
 
@@ -440,14 +444,19 @@ border_width_x
 border_width_y
     !byte $32
 
+no_smokes
+    !byte $02
+
 smokes 
-    !byte $FF, $FF, $FF
-    !byte $FF, $FF, $FF
-    !byte $FF, $FF, $FF
-    !byte $FF, $FF, $FF
-    !byte $FF, $FF, $FF
-smoke_index
+    !byte $FF, $FF
+    !byte $FF, $FF
+    !byte $FF, $FF
+    !byte $FF, $FF
+    !byte $FF, $FF
+smoke_index_in
     !byte $00
+smoke_index_out
+    !byte $FF
 
 ; Symbols
 !set current_room = $09
