@@ -63,11 +63,16 @@ main
     STA $D015        ; Store modified value back to Control Register 4
 
     ; Sprite position
-    LDA #$80
-    STA $D000    
+    LDA hero_x
+    STA $D000   
+    ; LDA 01 
+    ; STA $D010
+    LDA hero_y
     STA $D001
 
-    
+    JSR .f_get_sprite_row_column
+    LDA #$29
+    JSR .f_put_char
    
     JSR .f_set_irq
 
@@ -101,13 +106,156 @@ main
     lda #$20
     sta $d012		
     							        
-    lda #<.f_game_irq
-    ldx #>.f_game_irq
+    lda #<.f_sprite_irq
+    ldx #>.f_sprite_irq
     sta $0314
     stx $0315
             
     cli			
     rts
+
+.f_sprite_irq
+
+    ; reset interrupt
+    ASL $d019
+
+    ; debug bar
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #1
+        STA $d020
+    }
+
+    LDX refresh_room
+    CPX #$00
+    BEQ hero_move
+    DEC refresh_room    
+    JSR .f_draw_room 
+
+hero_move
+   
+    ; JSR .f_get_sprite_row_column
+    ; LDA #$00
+    ; JSR .f_put_char  
+
+    ; init variables
+    LDA #$00
+    STA hero_moved
+
+    LDA hero_x
+    STA hero_new_x
+    LDA hero_x_msb
+    STA hero_new_x_msb
+    LDA hero_y
+    STA hero_new_y
+
+    JSR .f_get_joystick
+    CPX #$01    
+    BEQ move_hero_right
+    CPX #$FF
+    BEQ move_hero_left
+    JMP hero_move_up_down
+
+move_hero_right
+    ; move right
+    LDA hero_moved
+    ORA #$01
+    STA hero_moved
+    LDA #$01 ; facing right
+    JSR .f_update_facing
+    LDA hero_x   
+    CLC
+    ADC #$2
+    BNE end_hero_move_left_right
+    TAX    
+    LDA hero_x_msb
+    ORA #$01
+    STA hero_new_x_msb
+    TXA
+    JMP end_hero_move_left_right
+move_hero_left
+    ; move hero left      
+    LDA hero_moved
+    ORA #$02
+    STA hero_moved
+    LDA #$00 ; facing right
+    JSR .f_update_facing
+    LDA hero_x        
+    SEC
+    SBC #$2           
+    BPL end_hero_move_left_right
+    TAX
+    LDA hero_x_msb
+    AND #$FE
+    STA hero_new_x_msb
+    TXA
+end_hero_move_left_right          
+    STA hero_new_x
+    
+hero_move_up_down
+    CPY #$01    
+    BEQ hero_move_down
+    CPY #$FF    
+    BEQ hero_move_up
+    JMP end_hero_move
+hero_move_down
+    LDA hero_moved
+    ORA #$04
+    STA hero_moved
+    LDA hero_y 
+    CLC
+    ADC #$2
+    JMP end_hero_move_up_down
+hero_move_up
+    LDA hero_moved
+    ORA #$08
+    STA hero_moved
+    LDA hero_y      
+    SEC
+    SBC #$2  
+end_hero_move_up_down    
+    STA hero_new_y
+
+end_hero_move  
+
+    LDA hero_moved
+    CMP #$00
+    BEQ hero_no_move
+
+    ; check collision
+    JSR .f_check_backgroud_collision
+    CMP #$01
+    BEQ hero_no_move
+
+    ; if no collision, finalize move & smoke
+    LDA hero_new_x
+    STA hero_x
+    STA $D000
+    LDA hero_new_x_msb
+    STA hero_x_msb
+    STA $D010
+    LDA hero_new_y
+    STA hero_y
+    STA $D001
+
+hero_no_move
+f_sprite_irq_end
+    ; JSR .f_get_sprite_row_column
+    ; LDA #$29
+    ; JSR .f_put_char
+    ; debug bar
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #0
+        STA $d020
+    }
+
+    ; end of interrupt
+    JMP $ea7e    
 
 .f_game_irq	
     
@@ -331,8 +479,8 @@ hero_moved_up_down
     RTS    
 nobcollision
     ; handle jet pack smoking
-    LDY hero_initial_column
     LDX hero_initial_row
+    LDY hero_initial_column    
     LDA hero_facing_switched
     CMP #$02    
     BEQ no_smoking
@@ -354,6 +502,122 @@ no_smoking
     ; two times
     DEC hero_facing_switched
 f_move_hero_end
+    RTS
+
+.f_check_backgroud_collision
+    LDA hero_new_x
+    SEC
+    SBC border_width_x    
+    STA tmp    
+    LDA hero_new_x_msb
+    AND #$01
+    SBC #$00
+    LSR
+    LDA tmp
+    ROR        
+    LSR
+    LSR
+    TAY ; column
+    LDA hero_new_y
+    SEC    
+    SBC border_width_y
+    LSR
+    LSR
+    LSR
+    TAX ; row   
+    INY    
+    JSR .f_get_char
+    CMP #$29
+    BEQ hit        
+    INX
+    JSR .f_get_char
+    CMP #$29
+    BEQ hit    
+    INX
+    JSR .f_get_char
+    CMP #$29
+    BEQ hit        
+    DEX
+    DEX
+    INY    
+    JSR .f_get_char
+    CMP #$29
+    BEQ hit        
+    INX
+    JSR .f_get_char
+    CMP #$29
+    BEQ hit    
+    INX
+    JSR .f_get_char
+    CMP #$29
+    BEQ hit
+    LDA #$00
+    JMP f_check_backgroud_collision_end
+hit
+    LDA #$01
+f_check_backgroud_collision_end
+    RTS
+
+.f_get_sprite_row_column
+    ; Parameter
+    ;   A => Sprite index
+    ; Return 
+    ;   X => ROW
+    ;   Y => COLUMN      
+    ; (hate this but works better and faster then using switched index)    
+    LDA $D000 ; sprite X coordinate
+    SEC
+    SBC border_width_x    
+    STA tmp    
+    LDA $D010 ; sprite X high bit
+    AND #$01
+    SBC #$00
+    LSR
+    LDA tmp
+    ROR        
+    LSR
+    LSR
+    TAY ; column
+    LDA $D000 + $01 ; sprite Y coordinate   
+    SEC    
+    SBC border_width_y
+    LSR
+    LSR
+    LSR
+    TAX ; row
+    RTS
+
+.f_get_char
+    ; Parameters 
+    ;   X => ROW
+    ;   Y => COLUMN      
+    LDA ScreenRAMRowTableLow, x
+    STA $FB;
+    LDA ScreenRAMRowTableHigh, x
+    STA $FC;    
+    LDA ($FB),y 
+    RTS
+
+.f_put_char
+    ; Parameters 
+    ;   X => ROW
+    ;   Y => COLUMN      
+    ;   A => char to be printed
+    
+    PHA ; save accumulator into stack
+
+    INX
+    INY
+    INY
+        
+    LDA ScreenRAMRowTableLow, x
+    STA $FB ; Zero page unused byte
+    LDA ScreenRAMRowTableHigh, x
+    STA $FC ; Zero page unused byte
+
+    PLA ; load accumulator value    
+    ; Zero Page Indirect-indexed addressing (works using Y as offet)
+    STA ($FB),y 
     RTS
 
 .f_get_joystick
@@ -406,6 +670,9 @@ f_update_facing_end
     RTS
 
 ; Variables
+tmp
+    !byte $00
+
 refresh_room  ; set to $01 if screen need to be refreshed
     !byte $01
 
@@ -422,6 +689,24 @@ hero_facing_switched
 
 hero_moved
     !byte $00
+
+hero_x
+    !byte $50
+
+hero_x_msb
+    !byte $00
+
+hero_y
+    !byte $86
+
+hero_new_x
+    !byte $00
+
+hero_new_x_msb
+    !byte $00
+
+hero_new_y
+    !byte $A0
 
 hero_intial_x
     !byte $00
