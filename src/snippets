@@ -1,0 +1,113 @@
+; old hero moving routing
+.f_move_hero    
+    LDX #$00
+    STX hero_moved
+    ; store initial hero position
+    LDA $D000
+    STA hero_intial_x
+    SEC
+    SBC border_width_x
+    LSR
+    LSR
+    LSR
+    STA hero_initial_column    
+    LDA $D001
+    STA hero_intial_y
+    SEC    
+    SBC border_width_y
+    CLC
+    ADC #$0A ; center to hero sprite
+    LSR
+    LSR
+    LSR
+    STA hero_initial_row
+    ; read joystick
+    JSR .f_get_joystick
+    ; move hero (if needed)
+    CPX #$01    
+    BEQ hero_right
+    CPX #$FF    
+    BEQ hero_left
+    JMP hero_moved_left_right
+hero_right    
+    INC hero_moved
+    LDA $D000
+    CLC
+    ADC #$2    
+    STA $D000
+    LDA #$01 ; facing right
+    JSR .f_update_facing
+    JMP hero_moved_left_right
+hero_left    
+    INC hero_moved
+    LDA $D000
+    SEC
+    SBC #$2
+    STA $D000   
+    LDA #$00 ; facing left
+    JSR .f_update_facing 
+hero_moved_left_right
+    CPY #$01    
+    BEQ hero_down
+    CPY #$FF    
+    BEQ hero_up
+    JMP hero_moved_up_down
+hero_down    
+    INC hero_moved
+    LDA $D001
+    CLC
+    ADC #$2
+    STA $D001
+    JMP hero_moved_up_down
+hero_up
+    INC hero_moved
+    LDA $D001
+    SEC
+    SBC #$2
+    STA $D001   
+hero_moved_up_down
+    ; check only if hero has been moved
+    LDX hero_moved
+    CPX #$00
+    BEQ f_move_hero_end
+    LDA $d01f        
+    LSR
+    BCC nobcollision
+    JMP nobcollision
+    ; restore hero position before collision
+    LDA $D000
+    LDA $D001
+    LDA hero_intial_x
+    SBC #$5
+    STA $D000
+    LDA hero_intial_y
+    STA $D001
+    LDA $D000
+    LDA $D001
+    RTS    
+nobcollision
+    ; handle jet pack smoking
+    LDX hero_initial_row
+    LDY hero_initial_column    
+    LDA hero_facing_switched
+    CMP #$02    
+    BEQ no_smoking
+    CMP #$01    
+    BEQ no_smoking
+    LDA hero_facing
+    CMP #$01
+    BEQ smoking
+    INY
+smoking
+    LDA ScreenRAMRowTableLow, x
+    STA $FB
+    LDA ScreenRAMRowTableHigh, x
+    STA $FC
+    LDA #$2E ; char code for smoke
+    STA ($FB),y
+    JMP f_move_hero_end
+no_smoking
+    ; two times
+    DEC hero_facing_switched
+f_move_hero_end
+    RTS
