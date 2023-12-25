@@ -14,6 +14,8 @@
 *= $5000
 !bin "../resources/level_1.bin"
 
+
+
 *=$0801
 !byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
 jmp main
@@ -125,7 +127,7 @@ main
         STA $d020
     }
 
-    jsr $1003	; play			
+    ; jsr $1003	; play			
     
     LDX refresh_room
     CPX #$00
@@ -189,25 +191,54 @@ no_refres_needed
     RTS
 
 .f_draw_room    
-    ; Print room
-    room_address = $5000 + ((current_room - $01) * $3e8)
-
-    LDA #$00
-    TAX
-draw_room_loop
-    LDA room_address, x
-    STA $0400, x
-    LDA room_address + $100, x
-    STA $0500, x
-    LDA room_address + $200, x
-    STA $0600, x
-    CPX #$E8
-    BCS draw_room_last_line
-    LDA room_address + $300, x
-    STA $0700, x
-draw_room_last_line
+    ; Print room    
+    
+    LDX current_room
     DEX
-    BNE draw_room_loop
+     
+    LDA LEVEL_1_Low, x
+    STA $FB;
+    LDA LEVEL_1_High, x
+    STA $FC;    
+    
+    LDY #$00
+draw_room_loop_1    
+     ; first video zone
+    LDA ($FB), y    
+    STA $0400, y
+    DEY
+    BNE draw_room_loop_1
+   
+    INC $FC;
+    LDY #$00
+draw_room_loop_2
+    ; second video zone
+    LDA ($FB), y    
+    STA $0500, y     
+    DEY
+    BNE draw_room_loop_2
+
+    INC $FC;
+    LDY #$00
+draw_room_loop_3
+    ; third video zone
+    LDA ($FB), y    
+    STA $0600, y
+    DEY
+    BNE draw_room_loop_3
+   
+    INC $FC;
+    LDY #$00
+draw_room_loop_4    
+    ; forth video zone
+    CPY #$E8
+    BCS draw_room_last_line
+    LDA ($FB), y    
+    STA $0700, y 
+draw_room_last_line    
+    DEY
+    BNE draw_room_loop_4
+
     RTS
 
 .f_clear    
@@ -331,7 +362,7 @@ end_hero_move
     CMP #$01
     BEQ hero_no_move
 
-    ; if no collision, finalize move & smoke
+   ; if no collision, finalize move
     LDA hero_new_x
     STA hero_x
     STA $D000
@@ -341,7 +372,17 @@ end_hero_move
     LDA hero_new_y
     STA hero_y
     STA $D001
+    ; smoke
 
+    ; room switch
+    LDA hero_x
+    CMP #$00
+    BNE hero_no_move
+    LDX current_room
+    DEX
+    STX current_room
+    LDX #$01
+    STX refresh_room
 hero_no_move
     RTS
 
@@ -583,7 +624,8 @@ smoke_index_out
     !byte $FF
 
 ; Symbols
-!set current_room = $09
+current_room 
+    !byte $09
 !set level_width = $03
 !set level_heigh = $03    
 
@@ -599,3 +641,11 @@ ScreenRAMRowTableHigh
         !byte >SCRN+(40*08),>SCRN+(40*09),>SCRN+(40*10),>SCRN+(40*11),>SCRN+(40*12),>SCRN+(40*13),>SCRN+(40*14),>SCRN+(40*15)
         !byte >SCRN+(40*16),>SCRN+(40*17),>SCRN+(40*18),>SCRN+(40*19),>SCRN+(40*20),>SCRN+(40*21),>SCRN+(40*22),>SCRN+(40*23)
         !byte >SCRN+(40*24)
+
+LEVEL = $5000
+LEVEL_1_Low
+    !byte <LEVEL+(0*$3e8),<LEVEL+(1*$3e8),<LEVEL+(2*$3e8),<LEVEL+(3*$3e8),<LEVEL+(4*$3e8)
+    !byte <LEVEL+(5*$3e8),<LEVEL+(6*$3e8),<LEVEL+(7*$3e8),<LEVEL+(8*$3e8)
+LEVEL_1_High
+    !byte >LEVEL+(0*$3e8),>LEVEL+(1*$3e8),>LEVEL+(2*$3e8),>LEVEL+(3*$3e8),>LEVEL+(4*$3e8)
+    !byte >LEVEL+(5*$3e8),>LEVEL+(6*$3e8),>LEVEL+(7*$3e8),>LEVEL+(8*$3e8)
