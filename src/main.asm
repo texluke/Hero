@@ -361,8 +361,50 @@ end_hero_move
     JSR .f_check_backgroud_collision
     CMP #$01
     BEQ hero_no_move
+    
+    ; room switching    
+check_left
+    LDA hero_new_x
+    CMP #$00
+    BNE check_right
+    LDA hero_new_x_msb 
+    CMP #$00
+    BEQ room_left
+check_right
+    LDA hero_new_x
+    CMP #$58
+    BNE check_top
+    LDA hero_new_x_msb 
+    CMP #$01
+    BEQ room_right
+    JMP finalize_hero_move
 
-   ; if no collision, finalize move
+check_top
+    JMP finalize_hero_move
+
+room_left
+    LDA #$58
+    STA hero_new_x
+    LDA hero_new_x_msb
+    ORA #$01
+    STA hero_new_x_msb
+    ; switch room left
+    DEC current_room
+    INC refresh_room
+    JMP finalize_hero_move
+room_right
+    LDA #$10
+    STA hero_new_x
+    LDA hero_new_x_msb
+    AND #$FE
+    STA hero_new_x_msb
+    ; switch room left
+    INC current_room
+    INC refresh_room
+    JMP finalize_hero_move
+
+finalize_hero_move
+    ; if no collision, finalize move
     LDA hero_new_x
     STA hero_x
     STA $D000
@@ -374,15 +416,7 @@ end_hero_move
     STA $D001
     ; smoke
 
-    ; room switch
-    LDA hero_x
-    CMP #$00
-    BNE hero_no_move
-    LDX current_room
-    DEX
-    STX current_room
-    LDX #$01
-    STX refresh_room
+    
 hero_no_move
     RTS
 
