@@ -20,7 +20,7 @@
 !byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
 jmp main
 
-!set debug = $01
+;!set debug = $01
 
 *=$8000 
 main
@@ -393,7 +393,7 @@ room_left
     INC refresh_room
     JMP finalize_hero_move
 room_right
-    LDA #$10
+    LDA #$00
     STA hero_new_x
     LDA hero_new_x_msb
     AND #$FE
@@ -422,6 +422,7 @@ hero_no_move
 
 
 .f_check_backgroud_collision
+    ; TODO: skip collision check if sprite is OOS
     LDA hero_new_x
     SEC
     SBC border_width_x    
@@ -444,6 +445,8 @@ hero_no_move
     TAX ; row   
     INY    
     JSR .f_get_char
+    ; LDA #01
+    ; JSR .f_put_char
     CMP #$29
     BEQ hit        
     INX
@@ -472,6 +475,7 @@ hero_no_move
     JMP f_check_backgroud_collision_end
 hit
     LDA #$01
+    ;JSR .f_put_char
 f_check_backgroud_collision_end
     RTS
 
