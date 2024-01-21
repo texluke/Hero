@@ -23,6 +23,12 @@ jmp main
 ;!set debug = $01
 
 *=$8000 
+
+border_width_x
+    !byte $18
+
+border_width_y
+    !byte $32
 main
     jsr $1000
 
@@ -422,12 +428,25 @@ hero_no_move
 
 
 .f_check_backgroud_collision
-    ; TODO: skip collision check if sprite is OOS
+    ; TODO: handle negative sprite coordinate
+    LDA hero_new_x_msb
+    CMP #$00
+    BNE get_column
+    LDA hero_new_x
+    SEC
+    SBC border_width_x  
+    BMI check_carry
+    JMP get_column_msb
+check_carry
+    BCS get_column_msb
+    JMP y_0
+get_column
     LDA hero_new_x
     SEC
     SBC border_width_x    
-    STA tmp    
-    LDA hero_new_x_msb
+get_column_msb
+    STA tmp 
+    LDA hero_new_x_msb    
     AND #$01
     SBC #$00
     LSR
@@ -435,18 +454,22 @@ hero_no_move
     ROR        
     LSR
     LSR
-    TAY ; column
+    TAY ; column          
+    INY    
+    JMP get_row
+y_0
+    LDY #$00
+get_row
     LDA hero_new_y
     SEC    
     SBC border_width_y
     LSR
     LSR
     LSR
-    TAX ; row   
-    INY    
+    TAX ; row       
     JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    LDA #01
+    JSR .f_put_char
     CMP #$29
     BEQ hit        
     INX
@@ -485,7 +508,30 @@ f_check_backgroud_collision_end
     ; Return 
     ;   X => ROW
     ;   Y => COLUMN      
-    ; (hate this but works better and faster then using switched index)    
+    ; (hate this but works better and faster then using switched index)
+
+    ; Fix it to handle x coordinate MSB
+    ; LDA hero_new_x
+    ; SEC
+    ; SBC border_width_x    
+    ; STA tmp    
+    ; LDA hero_new_x_msb
+    ; AND #$01
+    ; SBC #$00
+    ; LSR
+    ; LDA tmp
+    ; ROR        
+    ; LSR
+    ; LSR
+    ; TAY ; column
+    ; LDA hero_new_y
+    ; SEC    
+    ; SBC border_width_y
+    ; LSR
+    ; LSR
+    ; LSR
+    ; TAX ; row   
+
     LDA $D000 ; sprite X coordinate
     SEC
     SBC border_width_x    
@@ -608,14 +654,13 @@ hero_facing_switched
 hero_moved
     !byte $00
 
+; Hero position
+; X
 hero_x
     !byte $50
 
 hero_x_msb
     !byte $00
-
-hero_y
-    !byte $86
 
 hero_new_x
     !byte $00
@@ -623,29 +668,14 @@ hero_new_x
 hero_new_x_msb
     !byte $00
 
+; Y
+hero_y
+    !byte $86
+
 hero_new_y
     !byte $A0
 
-hero_intial_x
-    !byte $00
 
-hero_intial_x_msb
-    !byte $00
-
-hero_intial_y
-    !byte $00
-
-hero_initial_column
-    !byte $00
-
-hero_initial_row
-    !byte $00
-
-border_width_x
-    !byte $18
-
-border_width_y
-    !byte $32
 
 no_smokes
     !byte $02
@@ -664,6 +694,7 @@ smoke_index_out
 ; Symbols
 current_room 
     !byte $09
+
 !set level_width = $03
 !set level_heigh = $03    
 
