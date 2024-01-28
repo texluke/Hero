@@ -20,7 +20,7 @@
 !byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
 jmp main
 
-;!set debug = $01
+!set debug = $01
 
 *=$8000 
 
@@ -29,6 +29,28 @@ border_width_x
 
 border_width_y
     !byte $32
+
+; Hero position
+; X
+hero_x
+    !byte $50
+
+hero_x_msb
+    !byte $00
+
+hero_new_x
+    !byte $00
+
+hero_new_x_msb
+    !byte $00
+
+; Y
+hero_y
+    !byte $86
+
+hero_new_y
+    !byte $A0
+
 main
     jsr $1000
 
@@ -47,14 +69,18 @@ main
     ; load sprite 
     LDA #$81
     STA $07f8
+
+    LDA #$82
+    STA $07f9
         
     ; Configure sprite colors
     LDA #$01         ; Set sprite color to white (color index 15)
     STA $D027        ; Store color information for sprite 0
+    STA $D028        ; Store color information for sprite 1
 
     ; Enable high-resolution mode for sprite 0
     LDA $D01C        ; Load current value from VIC-II Control Register 4
-    AND #%11111110   ; Set bit 0 to 0 for sprite 0 high res
+    AND #%11111100   ; Set bit 0 to 0 for sprite 0 high res
     STA $D01C        ; Store modified value back to Control Register 4
 
     ; Enable sprites
@@ -65,10 +91,10 @@ main
     ; Sprite position
     LDA hero_x
     STA $D000   
-    ; LDA 01 
-    ; STA $D010
+    STA $D002       
     LDA hero_y
     STA $D001
+    STA $D003
 
     JSR .f_get_sprite_row_column
     LDA #$29
@@ -132,9 +158,7 @@ main
         LDA #1
         STA $d020
     }
-
-    ; jsr $1003	; play			
-    
+        
     LDX refresh_room
     CPX #$00
     BEQ no_refres_needed
@@ -164,10 +188,31 @@ no_refres_needed
     ASL $d019        
 
     JMP $ea7e
-  
+
+.f_boder_irq
+  JMP $ea7e
+
 .f_end_irq        
     JSR .f_draw_bar
-                                          		          
+
+    ; !ifdef debug {
+    ;     LDY $d012
+    ;     CPY $d012
+    ;     BEQ *-3
+    ;     LDA #0
+    ;     STA $d020
+    ; }
+
+    jsr $1003	; play			
+
+    ; !ifdef debug {
+    ;     LDY $d012
+    ;     CPY $d012
+    ;     BEQ *-3
+    ;     LDA #0
+    ;     STA $d020
+    ; }
+                          		          
     ; set next interrupt
     LDA #$20				
     STA $d012	
@@ -280,9 +325,17 @@ color_loop:
     RTS
 
 .f_move_hero
+
+    ; disable bubble
+    LDA $D015        
+    AND #%11111101   
+    STA $D015 
+
+    ; set hero to "not moved"
     LDA #$00
     STA hero_moved
 
+    ; save old coordinates
     LDA hero_x
     STA hero_new_x
     LDA hero_x_msb
@@ -290,6 +343,7 @@ color_loop:
     LDA hero_y
     STA hero_new_y
 
+    ; get joystic button
     JSR .f_get_joystick
     CPX #$01    
     BEQ move_hero_right
@@ -310,7 +364,7 @@ move_hero_right
     BNE end_hero_move_left_right
     TAX    
     LDA hero_x_msb
-    ORA #$01
+    ORA #%00000001
     STA hero_new_x_msb
     TXA
     JMP end_hero_move_left_right
@@ -327,7 +381,7 @@ move_hero_left
     BPL end_hero_move_left_right
     TAX
     LDA hero_x_msb
-    AND #$FE
+    AND #%11111110
     STA hero_new_x_msb
     TXA
 end_hero_move_left_right          
@@ -358,35 +412,51 @@ end_hero_move_up_down
     STA hero_new_y
 
 end_hero_move  
-
     LDA hero_moved
     CMP #$00
-    BEQ hero_no_move
+    BNE move_hero_contine
+    RTS ; no move, return
 
+move_hero_contine
     ; check collision
     JSR .f_check_backgroud_collision
     CMP #$01
-    BEQ hero_no_move
-    
+    BNE check_left
+    LDA $D015        ; show bubble on collision
+    ORA #%00000011   
+    STA $D015 
+    RTS ; no move, return
+
     ; room switching    
 check_left
     LDA hero_new_x
     CMP #$00
     BNE check_right
     LDA hero_new_x_msb 
+    AND #$01
     CMP #$00
-    BEQ room_left
+    BEQ room_left    
 check_right
     LDA hero_new_x
     CMP #$58
-    BNE check_top
+    BNE check_up
     LDA hero_new_x_msb 
+    AND #$01
     CMP #$01
-    BEQ room_right
-    JMP finalize_hero_move
-
-check_top
-    JMP finalize_hero_move
+    BEQ room_right    
+check_up    
+    LDA hero_new_y
+    CMP #$10    
+    BNE check_down        
+    ; check direction
+    JMP room_up    
+check_down
+    ; check direction
+    LDA hero_new_y
+    CMP #$FF
+    BNE finalize_hero_move
+    ; check direction
+    JMP room_down
 
 room_left
     LDA #$58
@@ -408,30 +478,61 @@ room_right
     INC current_room
     INC refresh_room
     JMP finalize_hero_move
+room_up
+    LDA #$FF
+    STA hero_new_y
+    DEC current_room
+    DEC current_room
+    DEC current_room
+    INC refresh_room
+    JMP finalize_hero_move
+room_down
+    LDA #$00
+    STA hero_new_y
+    INC current_room
+    INC current_room
+    INC current_room
+    INC refresh_room
+    JMP finalize_hero_move
 
 finalize_hero_move
     ; if no collision, finalize move
     LDA hero_new_x
     STA hero_x
     STA $D000
-    LDA hero_new_x_msb
-    STA hero_x_msb
-    STA $D010
+    STA $D002
     LDA hero_new_y
     STA hero_y
     STA $D001
-    ; smoke
+    STA $D003
 
+    ; handle smb also for the buggle
+    LDA hero_new_x_msb
+    AND #%00000001
+    CMP #$01
+    BEQ hero_msb_1
+    AND #%11111101
+    JMP set_hero_msb
+hero_msb_1
+    LDA hero_new_x_msb
+    ORA #%00000011 ; force 1 msb for sprite 2 (bubble)
+set_hero_msb
+    STA $D010
+    ; update current x msb
+    LDA hero_new_x_msb
+    STA hero_x_msb    
     
+    ; smoke    
 hero_no_move
     RTS
 
 
 .f_check_backgroud_collision
-    ; TODO: handle negative sprite coordinate
+
+check_exit_left
     LDA hero_new_x_msb
     CMP #$00
-    BNE get_column
+    BNE get_column    
     LDA hero_new_x
     SEC
     SBC border_width_x  
@@ -439,9 +540,19 @@ hero_no_move
     JMP get_column_msb
 check_carry
     BCS get_column_msb
-    JMP y_0
-get_column
+    JMP y_0x00
+get_column 
+    ; check coming from
+    
+    ; hero msb = 1
+    ; LDA hero_facing
+    ; CMP #$00 ; facing left
+    ; BEQ contine_get_column
     LDA hero_new_x
+    CMP #$40 ; why 0x40 (64)??
+    BCS y_0x40 ; branch if major than    
+contine_get_column
+    LDA hero_new_x  
     SEC
     SBC border_width_x    
 get_column_msb
@@ -455,50 +566,69 @@ get_column_msb
     LSR
     LSR
     TAY ; column          
-    INY    
+    INY ; check collision at sprite middle   
     JMP get_row
-y_0
+y_0x00
     LDY #$00
-get_row
+    JMP get_row
+y_0x40
+    LDA hero_new_x_msb   
+    LDY #$27 ; set last column (39)
+    
+get_row    
     LDA hero_new_y
     SEC    
     SBC border_width_y
     LSR
     LSR
     LSR
-    TAX ; row       
-    JSR .f_get_char
-    LDA #01
-    JSR .f_put_char
+    TAX ; row 
+    ; and now check for collision      
+    CPY #$27 
+    BEQ check_only_current ; check last column (39)    
+    JSR .f_get_char    
+    ; LDA #01
+    ; JSR .f_put_char    
     CMP #$29
     BEQ hit        
     INX
     JSR .f_get_char
+    ; LDA #01
+    ; JSR .f_put_char    
     CMP #$29
     BEQ hit    
     INX
     JSR .f_get_char
+    ; LDA #01
+    ; JSR .f_put_char    
     CMP #$29
     BEQ hit        
     DEX
     DEX
-    INY    
+    INY  
+check_only_current
     JSR .f_get_char
+    ; LDA #01
+    ; JSR .f_put_char    
     CMP #$29
     BEQ hit        
     INX
     JSR .f_get_char
+    ; LDA #01
+    ; JSR .f_put_char    
     CMP #$29
     BEQ hit    
     INX
     JSR .f_get_char
+    ; LDA #01
+    ; JSR .f_put_char    
     CMP #$29
     BEQ hit
     LDA #$00
     JMP f_check_backgroud_collision_end
-hit
-    LDA #$01
-    ;JSR .f_put_char
+hit    
+    LDA #01
+    ; JSR .f_put_char    
 f_check_backgroud_collision_end
     RTS
 
@@ -654,26 +784,7 @@ hero_facing_switched
 hero_moved
     !byte $00
 
-; Hero position
-; X
-hero_x
-    !byte $50
 
-hero_x_msb
-    !byte $00
-
-hero_new_x
-    !byte $00
-
-hero_new_x_msb
-    !byte $00
-
-; Y
-hero_y
-    !byte $86
-
-hero_new_y
-    !byte $A0
 
 
 
