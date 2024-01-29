@@ -449,14 +449,21 @@ check_up
     CMP #$10    
     BNE check_down        
     ; check direction
-    JMP room_up    
+    LDA hero_moved
+    AND #$08
+    CMP #$00
+    BNE room_up    
 check_down
     ; check direction
     LDA hero_new_y
-    CMP #$FF
+    CMP #$FE
     BNE finalize_hero_move
     ; check direction
-    JMP room_down
+    LDA hero_moved
+    AND #$04
+    CMP #$00
+    BNE room_down
+    JMP finalize_hero_move
 
 room_left
     LDA #$58
@@ -479,7 +486,7 @@ room_right
     INC refresh_room
     JMP finalize_hero_move
 room_up
-    LDA #$FF
+    LDA #$FE
     STA hero_new_y
     DEC current_room
     DEC current_room
@@ -487,7 +494,7 @@ room_up
     INC refresh_room
     JMP finalize_hero_move
 room_down
-    LDA #$00
+    LDA #$10
     STA hero_new_y
     INC current_room
     INC current_room
