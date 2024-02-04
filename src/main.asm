@@ -304,7 +304,7 @@ clrloop
     STA $0600,x
     CPX #$E8
     BCS clear_last_line
-    LDA $8300, x
+    ; LDA $8300, x
     STA $0700, x
 clear_last_line
     DEX    
@@ -591,7 +591,7 @@ get_row
     LSR
     TAX ; row 
     ; and now check for collision      
-    CPY #$27 
+    CPY #$27
     BEQ check_only_current ; check last column (39)    
     JSR .f_get_char    
     ; LDA #01
@@ -635,7 +635,7 @@ check_only_current
     JMP f_check_backgroud_collision_end
 hit    
     LDA #01
-    ; JSR .f_put_char    
+    JSR .f_put_char    
 f_check_backgroud_collision_end
     RTS
 
