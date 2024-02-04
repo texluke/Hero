@@ -7,7 +7,15 @@ jmp main
 
 *=$8000 
 
+!set debug = $01
+
 main
+    ; border and screen color
+    LDA #$05
+    STA $d020
+    LDA #$00
+    STA $d021   
+
     ;JSR .f_set_color
     JSR .f_clear
 
@@ -73,7 +81,7 @@ main
     and #$7f
     sta $d011
     ; raster line
-    lda #$20
+    lda #$10
     sta $d012		
     							        
     lda #<.f_irq
@@ -86,6 +94,30 @@ main
 
 .f_irq	
 
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #5
+        STA $d020
+    }
+
+    LDY $d012
+    CPY $d012
+    BEQ *-3
+    LDA #0
+    STA $d020
+
+    LDA #$00
+    STA sprite_moved
+
+    LDA sprite_x
+    STA sprite_new_x
+    LDA sprite_msb_x
+    STA sprite_new_msb_x
+    LDA sprite_y
+    STA sprite_new_y
+
     ; get joystic button
     JSR .f_get_joystick
     CPX #$01    
@@ -96,31 +128,32 @@ main
 
 right
     ; move right    
+    INC sprite_moved
     LDA sprite_x   
     CLC
-    ADC #$1
-    STA $D000
-    STA sprite_x   
+    ADC #$1    
     BNE end_left_right ; if 0 set sprite msb to 1    
+    TAX
     LDA sprite_msb_x
-    ORA #%00000001
-    STA $D010
-    STA sprite_msb_x    
+    ORA #%00000001    
+    STA sprite_new_msb_x    
+    TXA
     JMP end_left_right
 
 left
+    INC sprite_moved
     LDA sprite_x        
     SEC
-    SBC #$1
-    STA $D000      
-    STA sprite_x        
+    SBC #$1        
     BPL end_left_right ; if negative flah set set msb to 0    
+    TAX
     LDA sprite_msb_x
-    AND #%11111110
-    STA $D010
-    STA sprite_msb_x    
+    AND #%11111110    
+    STA sprite_new_msb_x    
+    TXA
 
 end_left_right
+    STA sprite_new_x
     ; finalize move (if needed)
 
 up_and_down
@@ -131,6 +164,7 @@ up_and_down
     JMP end_up_down
 
 up
+    INC sprite_moved
     LDA sprite_y      
     SEC    
     SBC #$1 
@@ -139,6 +173,7 @@ up
     JMP end_up_down
 
 down
+    INC sprite_moved
     LDA sprite_y 
     CLC
     ADC #$1
@@ -148,18 +183,23 @@ down
 
 end_up_down
 
+    ; check if the sprite has been moved
+    LDA sprite_moved
+    CMP #$00
+    BEQ no_move
+
 end_move
-    ; remove char
-    LDX sprite_char_x
-    LDY sprite_char_y
-    LDA #$20
-    JSR .f_put_char
-    INX 
-    JSR .f_put_char
-    INX
-    JSR .f_put_char
-    INX
-    JSR .f_put_char
+    
+    LDA sprite_new_x
+    STA $D000
+    STA sprite_x
+
+    LDA sprite_new_msb_x
+    STA $D010
+    STA sprite_msb_x
+
+    ; remove marker
+    JSR .f_clear_highlight
 
     ; put char
     JSR .f_get_sprite_row_column
@@ -178,10 +218,20 @@ end_move
 no_move
 
 irq_end
+
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #0
+        STA $d020
+    }
+
     ; reset interrupt
     ASL $d019        
 
     JMP $ea7e
+
 
 
 .f_draw_walls
@@ -189,13 +239,14 @@ irq_end
     LDX #$10
     DEX             ; 1 byte
     STA $0400, x    ; 3 byte
-    BNE * - 4       ; jump 4 byte back (avoid to use a labe)
+    BNE * - 4       ; jump 4 byte back (avoid to use label)
 
     LDX #$10
-    DEX             ; 1 byte
-    STA $07C8, x    ; 3 byte
+    DEX             
+    STA $07C0, x    
     BNE * - 4
 
+    ; left
     STA $0518
     STA $0540
     STA $0568
@@ -203,23 +254,33 @@ irq_end
     STA $05B8
     STA $05E0
     STA $0608
-
-    STA $0517
+    
+    ; righ
     STA $053F
     STA $0567
     STA $058F
     STA $05B7
     STA $05DF
     STA $0607
+    STA $062F
+    
 
     RTS
 
-.f_clear    
-    ; border and screen color to black
-    LDA #$05
-    STA $d020
-    LDA #$00
-    STA $d021   
+.f_clear_highlight
+    LDX sprite_char_x
+    LDY sprite_char_y
+    LDA #$20
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    RTS
+
+.f_clear        
     LDX #$00
     LDA #$20
 clear_loop
@@ -288,6 +349,17 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
     STA ($FB),y 
     RTS
 
+.f_get_char
+    ; Parameters 
+    ;   X => ROW
+    ;   Y => COLUMN      
+    LDA ScreenRAMRowTableLow, x
+    STA $FB;
+    LDA ScreenRAMRowTableHigh, x
+    STA $FC;    
+    LDA ($FB),y 
+    RTS
+
 .f_get_sprite_row_column
     ; Parameter
     ;   A => Sprite index
@@ -317,6 +389,8 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
     LSR
     TAX ; row
     RTS
+
+
 
 marker
     !byte $E0 ; dotted square
@@ -355,8 +429,20 @@ sprite_msb_x
 sprite_y
     !byte $80
 
+sprite_new_x
+    !byte $00
+
+sprite_new_msb_x
+    !byte $00
+
+sprite_new_y
+    !byte $00
+
 sprite_char_x
     !byte $00
 
 sprite_char_y
+    !byte $00
+
+sprite_moved 
     !byte $00
