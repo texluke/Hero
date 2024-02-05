@@ -39,9 +39,9 @@ main
     STA $D015        ; Store modified value back to Control Register 4
 
     ; Sprite position
-    LDA sprite_x
+    LDA hero_x
     STA $D000       
-    LDA sprite_y
+    LDA hero_y
     STA $D001
 
     JSR .f_draw_walls
@@ -109,14 +109,14 @@ main
     STA $d020
 
     LDA #$00
-    STA sprite_moved
+    STA hero_moved
 
-    LDA sprite_x
-    STA sprite_new_x
-    LDA sprite_msb_x
-    STA sprite_new_msb_x
-    LDA sprite_y
-    STA sprite_new_y
+    LDA hero_x
+    STA hero_new_x
+    LDA hero_msb_x
+    STA hero_new_msb_x
+    LDA hero_y
+    STA hero_new_y
 
     ; get joystic button
     JSR .f_get_joystick
@@ -128,32 +128,36 @@ main
 
 right
     ; move right    
-    INC sprite_moved
-    LDA sprite_x   
+    INC hero_moved
+    LDA #$01
+    STA hero_facing
+    LDA hero_x   
     CLC
     ADC #$1    
     BNE end_left_right ; if 0 set sprite msb to 1    
     TAX
-    LDA sprite_msb_x
+    LDA hero_msb_x
     ORA #%00000001    
-    STA sprite_new_msb_x    
+    STA hero_new_msb_x    
     TXA
     JMP end_left_right
 
 left
-    INC sprite_moved
-    LDA sprite_x        
+    INC hero_moved
+    LDA #$00
+    STA hero_facing
+    LDA hero_x        
     SEC
     SBC #$1        
     BPL end_left_right ; if negative flah set set msb to 0    
     TAX
-    LDA sprite_msb_x
+    LDA hero_msb_x
     AND #%11111110    
-    STA sprite_new_msb_x    
+    STA hero_new_msb_x    
     TXA
 
 end_left_right
-    STA sprite_new_x
+    STA hero_new_x
     ; finalize move (if needed)
 
 up_and_down
@@ -164,60 +168,83 @@ up_and_down
     JMP end_up_down
 
 up
-    INC sprite_moved
-    LDA sprite_y      
+    INC hero_moved
+    LDA hero_y      
     SEC    
     SBC #$1 
-    STA sprite_y
-    STA $D001
+    STA hero_new_y    
     JMP end_up_down
 
 down
-    INC sprite_moved
-    LDA sprite_y 
+    INC hero_moved
+    LDA hero_y 
     CLC
     ADC #$1
-    STA $D001
-    STA sprite_y
+    STA hero_new_y
+    STA hero_y
     
 
 end_up_down
 
     ; check if the sprite has been moved
-    LDA sprite_moved
+    LDA hero_moved
     CMP #$00
     BEQ no_move
 
 end_move
-    
-    LDA sprite_new_x
-    STA $D000
-    STA sprite_x
 
-    LDA sprite_new_msb_x
-    STA $D010
-    STA sprite_msb_x
-
-    ; remove marker
-    JSR .f_clear_highlight
-
-    ; put char
+    ; check collision
     JSR .f_get_sprite_row_column
-    INY
+    JSR .f_get_char
+    CMP wall
+    BEQ no_move
+
+    LDA hero_new_x
+    STA $D000
+    STA hero_x
+
+    LDA hero_new_msb_x
+    STA $D010
+    STA hero_msb_x
+
+    LDA hero_new_y
+    STA $D001
+    STA hero_y
+    
+
+    JSR .f_get_sprite_row_column
     STX sprite_char_x
     STY sprite_char_y
+    
+    ; put char
+    LDA hero_facing
+    CMP $00 ; left
+    BEQ ninc
+    INY
+ninc    
     LDA marker
     JSR .f_put_char
     INX    
     JSR .f_put_char
     INX    
     JSR .f_put_char
+    DEX
+    DEX
+    INY
+    JSR .f_put_char
     INX    
     JSR .f_put_char
+    INX    
+    JSR .f_put_char    
 
 no_move
 
 irq_end
+
+    
+
+    ; reset interrupt
+    ASL $d019        
 
     !ifdef debug {
         LDY $d012
@@ -226,9 +253,6 @@ irq_end
         LDA #0
         STA $d020
     }
-
-    ; reset interrupt
-    ASL $d019        
 
     JMP $ea7e
 
@@ -268,17 +292,63 @@ irq_end
     RTS
 
 .f_clear_highlight
+    
     LDX sprite_char_x
     LDY sprite_char_y
+    ; clear column
+
+    LDA hero_facing
+    CMP #$00 ; left
+    
     LDA #$20
+    DEY
+    JSR .f_put_char
+    INX        
     JSR .f_put_char
     INX    
     JSR .f_put_char
     INX    
+    JSR .f_put_char    
+    
+    DEX 
+    DEX
+    DEX
+    INY
+    JSR .f_put_char
+    INX        
     JSR .f_put_char
     INX    
     JSR .f_put_char
+    INX    
+    JSR .f_put_char    
+
+    DEX 
+    DEX
+    DEX
+    INY
+    JSR .f_put_char
+    INX        
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char    
+
+    ; DEX 
+    ; DEX
+    ; DEX
+    ; INY
+    ; JSR .f_put_char
+    ; INX        
+    ; JSR .f_put_char
+    ; INX    
+    ; JSR .f_put_char
+    ; INX    
+    ; JSR .f_put_char  
+
     RTS
+
+
 
 .f_clear        
     LDX #$00
@@ -420,22 +490,22 @@ ScreenRAMRowTableHigh
         !byte >SCRN+(40*24)
 
 
-sprite_x
+hero_x
     !byte $80
 
-sprite_msb_x
+hero_msb_x
     !byte $00
 
-sprite_y
+hero_y
     !byte $80
 
-sprite_new_x
+hero_new_x
     !byte $00
 
-sprite_new_msb_x
+hero_new_msb_x
     !byte $00
 
-sprite_new_y
+hero_new_y
     !byte $00
 
 sprite_char_x
@@ -444,5 +514,8 @@ sprite_char_x
 sprite_char_y
     !byte $00
 
-sprite_moved 
+hero_moved 
     !byte $00
+
+hero_facing
+    !byte $01 ; right 
