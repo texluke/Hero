@@ -45,12 +45,7 @@ main
     STA $D001
 
     JSR .f_draw_walls
-
-    JSR .f_get_sprite_row_column
-    STX sprite_char_x
-    STY sprite_char_y
-    LDA marker
-    JSR .f_put_char
+    JSR .f_highlight
     
     JSR .f_set_irq
 
@@ -98,7 +93,7 @@ main
         LDY $d012
         CPY $d012
         BEQ *-3
-        LDA #5
+        LDA #$01
         STA $d020
     }
 
@@ -194,11 +189,10 @@ end_up_down
 end_move
 
     ; check collision
-    JSR .f_get_sprite_row_column
-    JSR .f_get_char
-    CMP wall
+    JSR .f_check_collision
+    CMP $01
     BEQ no_move
-
+        
     LDA hero_new_x
     STA $D000
     STA hero_x
@@ -211,52 +205,56 @@ end_move
     STA $D001
     STA hero_y
     
-
-    JSR .f_get_sprite_row_column
-    STX sprite_char_x
-    STY sprite_char_y
+    JSR .f_clear_highlight
+    JSR .f_highlight
     
-    ; put char
-    LDA hero_facing
-    CMP $00 ; left
-    BEQ ninc
-    INY
-ninc    
-    LDA marker
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    DEX
-    DEX
-    INY
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char    
-
 no_move
 
-irq_end
-
-    
-
+irq_end    
     ; reset interrupt
     ASL $d019        
 
     !ifdef debug {
-        LDY $d012
-        CPY $d012
-        BEQ *-3
-        LDA #0
+        ; LDY $d012
+        ; CPY $d012
+        ; BEQ *-3
+        LDA #$00
         STA $d020
     }
 
     JMP $ea7e
 
+.f_check_collision
 
+    LDA hero_new_x  ; sprite X coordinate
+    SEC
+    SBC #$18        ; X border width 
+    STA tmp    
+    LDA hero_new_msb_x  ; sprite X high bit
+    AND #$01
+    SBC #$00
+    LSR
+    LDA tmp
+    ROR        
+    LSR
+    LSR
+    TAY ; column
+    LDA hero_new_y
+    SEC    
+    SBC #$32        ; Y border width
+    LSR
+    LSR
+    LSR
+    TAX ; row
+    INY
+    JSR .f_get_char
+    CMP wall
+    BEQ hit
+    LDA $00
+    RTS
+hit
+    LDA $01
+    RTS
 
 .f_draw_walls
     LDA wall
@@ -291,48 +289,58 @@ irq_end
 
     RTS
 
+.f_highlight
+    JSR .f_get_sprite_row_column
+    STX sprite_char_x
+    STY sprite_char_y         
+;     LDA hero_facing
+;     CMP #$00 ; left
+;     BEQ not_inc
+;     INY
+; not_inc    
+    INY
+    LDA marker
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    DEX
+    DEX
+    INY
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char    
+    RTS
+
 .f_clear_highlight
     
     LDX sprite_char_x
     LDY sprite_char_y
     ; clear column
 
-    LDA hero_facing
-    CMP #$00 ; left
-    
+;     LDA hero_facing
+;     CMP #$00 ; left
+;     BEQ not_inc_clean
+;     INY
+; not_inc_clean   
+    INY
     LDA #$20
-    DEY
-    JSR .f_put_char
-    INX        
     JSR .f_put_char
     INX    
     JSR .f_put_char
     INX    
-    JSR .f_put_char    
-    
-    DEX 
+    JSR .f_put_char
     DEX
     DEX
     INY
     JSR .f_put_char
-    INX        
-    JSR .f_put_char
     INX    
     JSR .f_put_char
     INX    
-    JSR .f_put_char    
-
-    DEX 
-    DEX
-    DEX
-    INY
-    JSR .f_put_char
-    INX        
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char    
+    JSR .f_put_char   
 
     ; DEX 
     ; DEX
