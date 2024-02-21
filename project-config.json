@@ -3,7 +3,7 @@
     "description": "Project Hero",
     "toolkit": "acme",
     "sources": [
-        "src/sprite.asm"
+        "src/main.asm"
     ],
     "build": "debug",
     "definitions": [],

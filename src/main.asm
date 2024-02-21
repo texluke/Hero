@@ -584,11 +584,24 @@ y_0x40
     
 get_row    
     LDA hero_new_y
+    BMI get_row_positive
     SEC    
     SBC border_width_y
+    BMI x_0x00
     LSR
     LSR
     LSR
+    JMP set_row
+get_row_positive
+    SEC    
+    SBC border_width_y    
+    LSR
+    LSR
+    LSR
+    JMP set_row
+x_0x00
+    LDA #$00
+set_row
     TAX ; row 
     ; and now check for collision      
     CPY #$27
@@ -635,7 +648,7 @@ check_only_current
     JMP f_check_backgroud_collision_end
 hit    
     LDA #01
-    JSR .f_put_char    
+    ; JSR .f_put_char    
 f_check_backgroud_collision_end
     RTS
 
@@ -790,9 +803,6 @@ hero_facing_switched
 
 hero_moved
     !byte $00
-
-
-
 
 
 no_smokes
