@@ -167,8 +167,9 @@ main
 
 no_refres_needed
     JSR .f_move_hero
+    JSR .f_move_bullets
     JSR .f_hero_shooting
-
+    
     !ifdef debug {
         LDY $d012
         CPY $d012
@@ -538,20 +539,106 @@ hero_no_move
     LDA $DC00
     AND #$10
     CMP #$00
-    BEQ shoot
+    BEQ fire_pressed
     ; fire not pressed
     RTS
-shoot
-    JSR .f_get_sprite_row_column
+fire_pressed
+    ; get a free bullet
+    LDX #$00
+get_free_bullets
+    LDA bullets, x
+    CMP #$00
+    BEQ shoot
+    CMP #$FF ; end of array
+    BEQ no_shoot
+    TXA ; 2
+    CLC ; 2
+    ADC #$05 ; 2
+    TAX ; 2
+    JMP get_free_bullets
+shoot    
+    STX tmp_2 ; store bullets array index
+    JSR .f_get_sprite_row_column ; use tmp
     INX
     INX
     INY
     INY
-    LDA #$2F
+    ; choose the right char according to sprite coordinates (how?) and gun type    
+    LDA #$2F    
     JSR .f_put_char
+    STX tmp ; store bullet X
+
+    ; store bullet position
+    LDX tmp_2 
+    LDA #$01
+    STA bullets, x
+    INX
+    LDA tmp
+    STA bullets, x
+    INX
+    TYA
+    STA bullets, x
+    INX
+    LDA #$2F
+    STA bullets, x
+    INX
+    LDA hero_facing
+    STA bullets, x
+
+no_shoot
     RTS
 
 .f_move_bullets
+    LDX #$00
+bullet
+    STX tmp_5
+    LDA bullets, x
+    CMP #$01
+    BEQ move_bullet
+    CMP #$FF ; end of array
+    BEQ end_of_bullets
+    JMP get_next_bullet
+move_bullet
+    INX ; X
+    LDA bullets, x
+    STA tmp
+    INX ; Y        
+    LDA bullets, x
+    STA tmp_2
+    INX ; char
+    LDA bullets, x
+    STA tmp_3    
+    INX ; direction    
+    LDA bullets, x
+    STA tmp_4
+    LDA #$00
+    LDX tmp
+    LDY tmp_2
+    JSR .f_put_char
+    LDA tmp_4
+    CMP #$01
+    BEQ bullet_right
+    ; bullet left
+    DEY
+    jmp put_bullet
+bullet_right
+    INY
+put_bullet
+    LDA tmp_3
+    JSR .f_put_char    
+    ; update bullet position in array
+    TYA
+    LDX tmp_5
+    INX
+    INX
+    STA bullets, x
+get_next_bullet
+    LDA tmp_5    
+    CLC ; 2
+    ADC #$05 ; 2
+    TAX ; 2
+    JMP bullet
+end_of_bullets
     RTS
 
 .f_move_enemies
@@ -809,6 +896,14 @@ f_update_facing_end
 ; Variables
 tmp
     !byte $00
+tmp_2
+    !byte $00
+tmp_3
+    !byte $00
+tmp_4
+    !byte $00
+tmp_5
+    !byte $00
 
 refresh_room  ; set to $01 if screen need to be refreshed
     !byte $01
@@ -840,6 +935,20 @@ smokes
 smoke_index_in
     !byte $00
 smoke_index_out
+    !byte $FF
+
+bullets
+    ; active, x, y, char, direction
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
     !byte $FF
 
 ; Symbols
