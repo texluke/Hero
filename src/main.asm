@@ -167,6 +167,7 @@ main
 
 no_refres_needed
     JSR .f_move_hero
+    JSR .f_hero_shooting
 
     !ifdef debug {
         LDY $d012
@@ -533,6 +534,28 @@ set_hero_msb
 hero_no_move
     RTS
 
+.f_hero_shooting
+    LDA $DC00
+    AND #$10
+    CMP #$00
+    BEQ shoot
+    ; fire not pressed
+    RTS
+shoot
+    JSR .f_get_sprite_row_column
+    INX
+    INX
+    INY
+    INY
+    LDA #$2F
+    JSR .f_put_char
+    RTS
+
+.f_move_bullets
+    RTS
+
+.f_move_enemies
+    RTS
 
 .f_check_backgroud_collision
 
