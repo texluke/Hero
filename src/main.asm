@@ -541,8 +541,18 @@ hero_no_move
     CMP #$00
     BEQ fire_pressed
     ; fire not pressed
+    ; set button released
+    LDA #$00
+    STA button_pressed  
     RTS
 fire_pressed
+    LDA button_pressed    
+    CMP #$01
+    BNE * + 3
+    RTS
+    ; set button pressed
+    LDA #$01
+    STA button_pressed    
     ; get a free bullet
     LDX #$00
 get_free_bullets
@@ -624,6 +634,13 @@ move_bullet
 bullet_right
     INY
 put_bullet
+    JSR .f_get_char
+    CMP #$29
+    BEQ clear_bullet
+    CPY #$00
+    BEQ clear_bullet
+    CPY #$27
+    BEQ clear_bullet
     LDA tmp_3
     JSR .f_put_char    
     ; update bullet position in array
@@ -632,6 +649,20 @@ put_bullet
     INX
     INX
     STA bullets, x
+    JMP get_next_bullet
+clear_bullet
+    LDX tmp_5
+    LDA #$00
+    STA bullets, x
+    INX
+    STA bullets, x
+    INX
+    STA bullets, x
+    INX
+    STA bullets, x
+    INX
+    STA bullets, x
+
 get_next_bullet
     LDA tmp_5    
     CLC ; 2
@@ -894,6 +925,8 @@ f_update_facing_end
     RTS
 
 ; Variables
+
+; temporary 
 tmp
     !byte $00
 tmp_2
@@ -903,6 +936,9 @@ tmp_3
 tmp_4
     !byte $00
 tmp_5
+    !byte $00
+
+button_pressed   
     !byte $00
 
 refresh_room  ; set to $01 if screen need to be refreshed
@@ -939,6 +975,26 @@ smoke_index_out
 
 bullets
     ; active, x, y, char, direction
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00
     !byte $00, $00, $00, $00, $00
     !byte $00, $00, $00, $00, $00
     !byte $00, $00, $00, $00, $00
