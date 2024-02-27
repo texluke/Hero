@@ -96,9 +96,9 @@ main
     STA $D001
     STA $D003
 
-    JSR .f_get_sprite_row_column
-    LDA #$29
-    JSR .f_put_char
+    ; JSR .f_get_sprite_row_column
+    ; LDA #$29
+    ; JSR .f_put_char
    
     JSR .f_set_irq
 
@@ -163,7 +163,8 @@ main
     CPX #$00
     BEQ no_refres_needed
     DEC refresh_room    
-    JSR .f_draw_room 
+    JSR .f_draw_room
+    JSR .f_position_enemies 
 
 no_refres_needed
     JSR .f_move_hero
@@ -324,6 +325,9 @@ color_loop:
     INX
     CPX #250
     bne color_loop
+    RTS
+
+.f_position_enemies
     RTS
 
 .f_move_hero
@@ -1010,6 +1014,18 @@ bullets
 ; Symbols
 current_room 
     !byte $09
+
+current_level 
+    !byte $01
+
+enemies_start_position
+    ; level, room, x, msbx, y, sprite
+    !byte $01, $08, $50, $00, $50
+
+    !byte $FF
+
+enemies
+    !byte $00
 
 !set level_width = $03
 !set level_heigh = $03    
