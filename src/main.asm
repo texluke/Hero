@@ -33,7 +33,7 @@ border_width_y
 ; Hero position
 ; X
 hero_x
-    !byte $50
+    !byte $A0
 
 hero_x_msb
     !byte $00
@@ -46,10 +46,10 @@ hero_new_x_msb
 
 ; Y
 hero_y
-    !byte $86
+    !byte $95
 
 hero_new_y
-    !byte $A0
+    !byte $00
 
 main
     jsr $1000
@@ -77,15 +77,21 @@ main
     LDA #$01         ; Set sprite color to white (color index 15)
     STA $D027        ; Store color information for sprite 0
     STA $D028        ; Store color information for sprite 1
+    STA $D029        ; Store color information for sprite 2
+    STA $D030        ; Store color information for sprite 3
+    STA $D031        ; Store color information for sprite 4
+    STA $D032        ; Store color information for sprite 5
+    STA $D033        ; Store color information for sprite 6
+    STA $D034        ; Store color information for sprite 7
 
     ; Enable high-resolution mode for sprite 0
     LDA $D01C        ; Load current value from VIC-II Control Register 4
-    AND #%11111100   ; Set bit 0 to 0 for sprite 0 high res
+    AND #%00000000   ; All sprites highres
     STA $D01C        ; Store modified value back to Control Register 4
 
     ; Enable sprites
     LDA $D015        ; Load current value from Control Register 4
-    ORA #%00000001   ; Set bit 0 to enable sprites
+    ORA #%00000001   ; Set bit 0 to enable sprites (jero)
     STA $D015        ; Store modified value back to Control Register 4
 
     ; Sprite position
@@ -328,6 +334,67 @@ color_loop:
     RTS
 
 .f_position_enemies
+    ; disable enemies sprite
+    LDA $D015
+    AND #%00000011
+    STA $D015
+    ; let's position
+    LDA current_level
+    CMP #$01
+    BNE position_enemies_level_2
+    LDX #$FF
+get_enemies_in_room                
+    INX
+    LDA enemies_level_1, x
+    CMP current_room
+    BNE enemies_next_room
+    ; positioning sprites
+    INX     
+    LDY enemies_level_1, x ; number of enemies
+get_next_enemy
+    CPY #$00
+    BEQ position_enemis_completed
+    INX
+    LDA enemies_level_1, x ; sprite id
+    ;STA tmp
+    LDA #$88
+    ;ADC tmp
+    STA $07fa
+    INX
+    LDA enemies_level_1, x ; sprite X
+    STA $D004
+    INX
+    LDA enemies_level_1, x ; sprite MSB X
+    INX
+    LDA enemies_level_1, x ; sprite Y
+    STA $D005
+    ; enable sprite
+    LDA $D015
+    ORA #%00000100
+    STA $D015
+    DEY
+    JMP get_next_enemy
+
+    RTS
+enemies_next_room
+    BCS position_enemis_completed
+    INX
+    LDY enemies_level_1, x ; number of enemies
+next_enemies_in_room
+    CPY #$00
+    BEQ get_enemies_in_room
+    INX ; size
+    INX ; sprite
+    INX ; x
+    INX ; msb x
+    INX ; y    
+    DEY
+    JMP next_enemies_in_room
+    ; init sprites according to rooms
+
+position_enemies_level_2
+    ;;
+position_enemis_completed
     RTS
 
 .f_move_hero
@@ -1013,7 +1080,7 @@ bullets
 
 ; Symbols
 current_room 
-    !byte $09
+    !byte $08
 
 current_level 
     !byte $01
@@ -1024,8 +1091,19 @@ enemies_start_position
 
     !byte $FF
 
-enemies
-    !byte $00
+enemies_level_1    
+    ;     LEVEL  /  # OF NEMIES
+    !byte $01,      $00
+    !byte $02,      $00
+    !byte $03,      $00
+    !byte $04,      $00    
+    !byte $05,      $00    
+    !byte $06,      $00    
+    !byte $07,      $00    
+    !byte $08,      $00    
+    !byte $09,      $01
+        ;       SPRITE  X       MSX_X   Y 
+        !byte   $08,    $80,    $01,    $80
 
 !set level_width = $03
 !set level_heigh = $03    
