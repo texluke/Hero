@@ -46,7 +46,7 @@ hero_new_x_msb
 
 ; Y
 hero_y
-    !byte $95
+    !byte $96
 
 hero_new_y
     !byte $00
@@ -1104,6 +1104,7 @@ enemies_level_1
     !byte $09,      $01
         ;       SPRITE  X       MSX_X   Y 
         !byte   $08,    $80,    $01,    $80
+        
 
 !set level_width = $03
 !set level_heigh = $03    
