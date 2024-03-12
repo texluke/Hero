@@ -78,11 +78,11 @@ main
     STA $D027        ; Store color information for sprite 0
     STA $D028        ; Store color information for sprite 1
     STA $D029        ; Store color information for sprite 2
-    STA $D030        ; Store color information for sprite 3
-    STA $D031        ; Store color information for sprite 4
-    STA $D032        ; Store color information for sprite 5
-    STA $D033        ; Store color information for sprite 6
-    STA $D034        ; Store color information for sprite 7
+    STA $D02A        ; Store color information for sprite 3
+    STA $D02B        ; Store color information for sprite 4
+    STA $D02C        ; Store color information for sprite 5
+    STA $D02D        ; Store color information for sprite 6
+    STA $D02E        ; Store color information for sprite 7
 
     ; Enable high-resolution mode for sprite 0
     LDA $D01C        ; Load current value from VIC-II Control Register 4
@@ -355,23 +355,36 @@ get_next_enemy
     CPY #$00
     BEQ position_enemis_completed
     INX
-    LDA enemies_level_1, x ; sprite id
-    ;STA tmp
-    LDA #$88
-    ;ADC tmp
-    STA $07fa
-    INX
+    LDA enemies_level_1, x ; sprite number
+    ADC #$80    
+    STA $07f9, y
+    INX    
     LDA enemies_level_1, x ; sprite X
-    STA $D004
+    ; store Y, A in temporary variables
+    STY tmp
+    STA tmp_2
+    ; calculate sprite registry offset
+    DEY
+    TYA
+    ASL ; multiply * 2
+    TAY    
+    ; D004, D006, D008, D00A, D00C, D00D
+    ; D004, (y-1)*2
+    LDA tmp_2 ; restore X coordinate
+    STA $D004, y    
     INX
     LDA enemies_level_1, x ; sprite MSB X
     INX
     LDA enemies_level_1, x ; sprite Y
-    STA $D005
+    ; D005, D007, D009, D00B, D00D, D00F
+    ; D005, (y-1)*2
+    STA $D005, y
+
     ; enable sprite
     LDA $D015
-    ORA #%00000100
+    ORA #%11111100
     STA $D015
+    LDY tmp ; restore index Y
     DEY
     JMP get_next_enemy
 
@@ -382,8 +395,7 @@ enemies_next_room
     LDY enemies_level_1, x ; number of enemies
 next_enemies_in_room
     CPY #$00
-    BEQ get_enemies_in_room
-    INX ; size
+    BEQ get_enemies_in_room    
     INX ; sprite
     INX ; x
     INX ; msb x
@@ -1020,7 +1032,8 @@ dx
 dy 
     !byte $01
 
-hero_facing
+hero_facing!byte   $0A,    $80,    $00,    $80
+        !byte   $08,    $80,    $00,    $A0
     !byte $01 ; right
 
 hero_facing_switched
@@ -1085,12 +1098,6 @@ current_room
 current_level 
     !byte $01
 
-enemies_start_position
-    ; level, room, x, msbx, y, sprite
-    !byte $01, $08, $50, $00, $50
-
-    !byte $FF
-
 enemies_level_1    
     ;     LEVEL  /  # OF NEMIES
     !byte $01,      $00
@@ -1099,11 +1106,19 @@ enemies_level_1
     !byte $04,      $00    
     !byte $05,      $00    
     !byte $06,      $00    
-    !byte $07,      $00    
-    !byte $08,      $00    
-    !byte $09,      $01
+    !byte $07,      $03    
         ;       SPRITE  X       MSX_X   Y 
-        !byte   $08,    $80,    $01,    $80
+        !byte   $0A,    $80,    $00,    $80
+        !byte   $08,    $80,    $00,    $A0
+        !byte   $09,    $80,    $00,    $D0
+    !byte $08,      $02
+        ;       SPRITE  X       MSX_X   Y 
+        !byte   $0A,    $80,    $00,    $80
+        !byte   $08,    $80,    $00,    $A0
+    !byte $09,      $02
+        ;       SPRITE  X       MSX_X   Y 
+        !byte   $0A,    $80,    $00,    $80
+        !byte   $08,    $80,    $00,    $A0
         
 
 !set level_width = $03
