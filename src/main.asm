@@ -338,6 +338,10 @@ color_loop:
     LDA $D015
     AND #%00000011
     STA $D015
+    ; reset MSB for all enemies
+    LDA $D010
+    AND #%00000011
+    STA $D010
     ; let's position
     LDA current_level
     CMP #$01
@@ -355,36 +359,42 @@ get_next_enemy
     CPY #$00
     BEQ position_enemis_completed
     INX
-    LDA enemies_level_1, x ; sprite number
+    ; SPRITE #
+    LDA enemies_level_1, x
     ADC #$80    
     STA $07f9, y
-    INX    
-    LDA enemies_level_1, x ; sprite X
-    ; store Y, A in temporary variables
-    STY tmp
-    STA tmp_2
-    ; calculate sprite registry offset
+    INX
+    ; Calculate sprite coordinate registry offset
+    STY tmp_Y        
     DEY
     TYA
     ASL ; multiply * 2
     TAY    
+    ; SPRITE X    
+    LDA enemies_level_1, x ; sprite X        
     ; D004, D006, D008, D00A, D00C, D00D
-    ; D004, (y-1)*2
-    LDA tmp_2 ; restore X coordinate
+    ; D004, (y-1)*2    
     STA $D004, y    
     INX
-    LDA enemies_level_1, x ; sprite MSB X
-    INX
+    ; SPRITE Y
     LDA enemies_level_1, x ; sprite Y
     ; D005, D007, D009, D00B, D00D, D00F
     ; D005, (y-1)*2
     STA $D005, y
-
-    ; enable sprite
+    LDY tmp_Y ; restore index Y    
+    INX        
+    ; SPRITE MSB
+    LDA enemies_level_1, x ; sprite MSB X
+    CMP #$00
+    BEQ no_msb
+    LDA $D010
+    ORA enemie_sprite_mask, y
+    STA $D010    
+no_msb    
+    ; Enable sprite
     LDA $D015
-    ORA #%11111100
-    STA $D015
-    LDY tmp ; restore index Y
+    ORA enemie_sprite_mask, y
+    STA $D015    
     DEY
     JMP get_next_enemy
 
@@ -398,8 +408,8 @@ next_enemies_in_room
     BEQ get_enemies_in_room    
     INX ; sprite
     INX ; x
-    INX ; msb x
-    INX ; y    
+    INX ; y
+    INX ; msb x    
     DEY
     JMP next_enemies_in_room
     ; init sprites according to rooms
@@ -1021,6 +1031,15 @@ tmp_4
 tmp_5
     !byte $00
 
+tmp_A
+    !byte $00
+
+tmp_X
+    !byte $00
+
+tmp_Y
+    !byte $00
+
 button_pressed   
     !byte $00
 
@@ -1098,27 +1117,32 @@ current_room
 current_level 
     !byte $01
 
+
+sprite_mask
+    !byte %00000001    
+enemie_sprite_mask 
+    !byte %00000010
+    !byte %00000100
+    !byte %00001000
+    !byte %00010000
+    !byte %00100000
+    !byte %01000000
+    !byte %10000000
+
 enemies_level_1    
     ;     LEVEL  /  # OF NEMIES
     !byte $01,      $00
     !byte $02,      $00
     !byte $03,      $00
-    !byte $04,      $00    
+    !byte $04,      $00         
     !byte $05,      $00    
     !byte $06,      $00    
-    !byte $07,      $03    
-        ;       SPRITE  X       MSX_X   Y 
-        !byte   $0A,    $80,    $00,    $80
-        !byte   $08,    $80,    $00,    $A0
-        !byte   $09,    $80,    $00,    $D0
-    !byte $08,      $02
-        ;       SPRITE  X       MSX_X   Y 
-        !byte   $0A,    $80,    $00,    $80
-        !byte   $08,    $80,    $00,    $A0
-    !byte $09,      $02
-        ;       SPRITE  X       MSX_X   Y 
-        !byte   $0A,    $80,    $00,    $80
-        !byte   $08,    $80,    $00,    $A0
+    !byte $07,      $00            
+    !byte $08,      $00        
+    !byte $09,      $01
+        ;       SPRITE  X       Y       MSB  
+        !byte   $01,    $10,    $80,    $01
+        !byte   $01,    $50,    $A0,    $00   
         
 
 !set level_width = $03
