@@ -1112,11 +1112,25 @@ bullets
 
 ; Symbols
 current_room 
-    !byte $08
+    !byte $09
 
 current_level 
     !byte $01
 
+
+!set drone_inactive = $07
+!set drone_left = $08
+!set drone_right = $08
+!set reaver_inactive = $09
+!set reaver_left = $0A
+!set reaver_right = $0B
+!set crusher_inactive = $0C
+!set crusher_left = $0D
+!set crusher_right = $0D
+!set hunter_inactive = $0E
+!set hunter_left = $0F
+!set hunter_right = $10
+!set generator = $11
 
 sprite_mask
     !byte %00000001    
@@ -1139,10 +1153,12 @@ enemies_level_1
     !byte $06,      $00    
     !byte $07,      $00            
     !byte $08,      $00        
-    !byte $09,      $01
-        ;       SPRITE  X       Y       MSB  
-        !byte   $01,    $10,    $80,    $01
-        !byte   $01,    $50,    $A0,    $00   
+    !byte $09,      $03
+        ;       SPRITE              X       Y       MSB  
+        !byte   drone_inactive,    $9C,    $C8,    $00   
+        !byte   drone_inactive,    $30,    $60,    $01        
+        !byte   reaver_inactive,   $30,    $C0,    $01   
+
         
 
 !set level_width = $03
