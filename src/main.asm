@@ -613,10 +613,12 @@ finalize_hero_move
     AND #%00000001
     CMP #$01
     BEQ hero_msb_1
-    AND #%11111101
+    LDA $D010
+    AND #%11111100 ; force 1 msb for sprite 2 (bubble)    
     JMP set_hero_msb
 hero_msb_1
-    LDA hero_new_x_msb
+    ;LDA hero_new_x_msb
+    LDA $D010
     ORA #%00000011 ; force 1 msb for sprite 2 (bubble)
 set_hero_msb
     STA $D010
@@ -1051,8 +1053,10 @@ dx
 dy 
     !byte $01
 
-hero_facing!byte   $0A,    $80,    $00,    $80
-        !byte   $08,    $80,    $00,    $A0
+; !byte   $0A,    $80,    $00,    $80
+; !byte   $08,    $80,    $00,    $A0
+
+hero_facing
     !byte $01 ; right
 
 hero_facing_switched
