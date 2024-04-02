@@ -369,7 +369,7 @@ reset_enemy_array_completed
     LDY #$FF
 get_enemies_in_room                
     INY
-    LDA ($FB),y
+    LDA ($FB), y
     CMP current_room
     BNE enemies_next_room    
     ; positioning sprites
@@ -378,13 +378,13 @@ get_enemies_in_room
     TAX
 get_next_enemy
     CPX #$00
-    BEQ position_enemis_completed
+    BEQ enemies_positioning_completed
     JSR .f_init_enemy
     DEX
     JMP get_next_enemy
     RTS
 enemies_next_room
-    BCS position_enemis_completed
+    BCS enemies_positioning_completed
     INY
     LDA ($FB), y ; number of enemies
     TAX
@@ -402,7 +402,7 @@ next_enemies_in_room
 
 position_enemies_level_2
     ;;
-position_enemis_completed
+enemies_positioning_completed
     RTS
 
 .f_init_enemy    
@@ -410,8 +410,9 @@ position_enemis_completed
     INY
     LDA ($FB), y
     JSR .f_store_enemy_data
+    CLC
     ADC #$80    
-    STA $07f9, y    
+    STA $07f9, x  
     ; Calculate sprite coordinate registry offset
     STX tmp_X        
     DEX
@@ -440,7 +441,7 @@ position_enemis_completed
     CMP #$00
     BEQ no_msb
     LDA $D010
-    ORA enemie_sprite_mask, x
+    ORA enemies_sprite_mask, x
     STA $D010    
 no_msb
     ; SPRITE STRETCHED
@@ -449,15 +450,15 @@ no_msb
     CMP #$00
     BEQ no_stretched
     LDA $D01D
-    ORA enemie_sprite_mask, x
+    ORA enemies_sprite_mask, x
     STA $D01D
     LDA $D017  
-    ORA enemie_sprite_mask, x
+    ORA enemies_sprite_mask, x
     STA $D017
 no_stretched  
     ; Enable sprite
     LDA $D015
-    ORA enemie_sprite_mask, x
+    ORA enemies_sprite_mask, x
     STA $D015   
     RTS
 
@@ -1190,7 +1191,7 @@ current_level
 
 sprite_mask
     !byte %00000001    
-enemie_sprite_mask 
+enemies_sprite_mask 
     !byte %00000010
     !byte %00000100
     !byte %00001000
@@ -1209,7 +1210,7 @@ enemies_level_1
     !byte $06,      $00    
     !byte $07,      $00            
     !byte $08,      $00        
-    !byte $09,      $03
+    !byte $09,      $02
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
         !byte   drone_inactive,    $30,    $60,    $01,     $00   
