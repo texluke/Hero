@@ -342,81 +342,133 @@ color_loop:
     LDA $D010
     AND #%00000011
     STA $D010
+    ; reset enemies array
+    LDX #$00
+reset_enemy_array    
+    LDA enemies, x
+    CMP #$FF
+    BEQ reset_enemy_array_completed
+    LDA #$00
+    STA enemies, x
+    TXA
+    CLC
+    ADC #$04
+    TAX
+    JMP reset_enemy_array
+reset_enemy_array_completed
+    LDA #$00
+    STA enemy_index    
     ; let's position
     LDA current_level
-    CMP #$01
-    BNE position_enemies_level_2
-    LDX #$FF
+    ; CMP #$01
+    ; BNE position_enemies_level_2
+    LDA #<enemies_level_1
+    STA $FB; Zero page
+    LDA #>enemies_level_1
+    STA $FC; Zero page
+    LDY #$FF
 get_enemies_in_room                
-    INX
-    LDA enemies_level_1, x
+    INY
+    LDA ($FB),y
     CMP current_room
-    BNE enemies_next_room
+    BNE enemies_next_room    
     ; positioning sprites
-    INX     
-    LDY enemies_level_1, x ; number of enemies
+    INY     
+    LDA ($FB),y ; number of enemies
+    TAX
 get_next_enemy
-    CPY #$00
+    CPX #$00
     BEQ position_enemis_completed
-    INX
-    ; SPRITE #
-    LDA enemies_level_1, x
-    ADC #$80    
-    STA $07f9, y
-    INX
-    ; Calculate sprite coordinate registry offset
-    STY tmp_Y        
-    DEY
-    TYA
-    ASL ; multiply * 2
-    TAY    
-    ; SPRITE X    
-    LDA enemies_level_1, x ; sprite X        
-    ; D004, D006, D008, D00A, D00C, D00D
-    ; D004, (y-1)*2    
-    STA $D004, y    
-    INX
-    ; SPRITE Y
-    LDA enemies_level_1, x ; sprite Y
-    ; D005, D007, D009, D00B, D00D, D00F
-    ; D005, (y-1)*2
-    STA $D005, y
-    LDY tmp_Y ; restore index Y    
-    INX        
-    ; SPRITE MSB
-    LDA enemies_level_1, x ; sprite MSB X
-    CMP #$00
-    BEQ no_msb
-    LDA $D010
-    ORA enemie_sprite_mask, y
-    STA $D010    
-no_msb    
-    ; Enable sprite
-    LDA $D015
-    ORA enemie_sprite_mask, y
-    STA $D015    
-    DEY
+    JSR .f_init_enemy
+    DEX
     JMP get_next_enemy
-
     RTS
 enemies_next_room
     BCS position_enemis_completed
-    INX
-    LDY enemies_level_1, x ; number of enemies
+    INY
+    LDA ($FB), y ; number of enemies
+    TAX
 next_enemies_in_room
-    CPY #$00
+    CPX #$00
     BEQ get_enemies_in_room    
-    INX ; sprite
-    INX ; x
-    INX ; y
-    INX ; msb x    
-    DEY
+    INY ; sprite
+    INY ; x
+    INY ; y
+    INY ; msb x  
+    INY ; streatched  
+    DEX
     JMP next_enemies_in_room
     ; init sprites according to rooms
 
 position_enemies_level_2
     ;;
 position_enemis_completed
+    RTS
+
+.f_init_enemy    
+    ; SPRITE #
+    INY
+    LDA ($FB), y
+    JSR .f_store_enemy_data
+    ADC #$80    
+    STA $07f9, y    
+    ; Calculate sprite coordinate registry offset
+    STX tmp_X        
+    DEX
+    TXA
+    ASL ; multiply * 2
+    TAX    
+    ; SPRITE X  
+    INY  
+    LDA ($FB), y ; sprite X        
+    JSR .f_store_enemy_data
+    ; D004, D006, D008, D00A, D00C, D00D
+    ; D004, (y-1)*2    
+    STA $D004, x        
+    ; SPRITE Y
+    INY
+    LDA ($FB), y ; sprite Y
+    JSR .f_store_enemy_data
+    ; D005, D007, D009, D00B, D00D, D00F
+    ; D005, (y-1)*2
+    STA $D005, x
+    LDX tmp_X ; restore index Y        
+    ; SPRITE MSB
+    INY
+    LDA ($FB), y ; sprite MSB X
+    JSR .f_store_enemy_data
+    CMP #$00
+    BEQ no_msb
+    LDA $D010
+    ORA enemie_sprite_mask, x
+    STA $D010    
+no_msb
+    ; SPRITE STRETCHED
+    INY    
+    LDA ($FB), y
+    CMP #$00
+    BEQ no_stretched
+    LDA $D01D
+    ORA enemie_sprite_mask, x
+    STA $D01D
+    LDA $D017  
+    ORA enemie_sprite_mask, x
+    STA $D017
+no_stretched  
+    ; Enable sprite
+    LDA $D015
+    ORA enemie_sprite_mask, x
+    STA $D015   
+    RTS
+
+.f_store_enemy_data
+    RTS
+    STY tmp_Y
+    LDY enemy_index
+    STA enemies, y
+    INY 
+    STY enemy_index
+    LDY tmp_Y
     RTS
 
 .f_move_hero
@@ -1158,12 +1210,26 @@ enemies_level_1
     !byte $07,      $00            
     !byte $08,      $00        
     !byte $09,      $03
-        ;       SPRITE              X       Y       MSB  
-        !byte   drone_inactive,    $9C,    $C8,    $00   
-        !byte   drone_inactive,    $30,    $60,    $01        
-        !byte   reaver_inactive,   $30,    $C0,    $01   
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
+        !byte   drone_inactive,    $30,    $60,    $01,     $00   
+        !byte   reaver_inactive,   $30,    $C0,    $01,     $00   
 
-        
+enemy_index
+    !byte $00
+
+enemies 
+    ;       SPRITE  X       Y       MSB
+    !byte   $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00
+    !byte   $FF
+
+enemies_bullets
 
 !set level_width = $03
 !set level_heigh = $03    
