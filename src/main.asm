@@ -358,10 +358,7 @@ reset_enemy_array
 reset_enemy_array_completed
     LDA #$00
     STA enemy_index    
-    ; let's position
-    LDA current_level
-    ; CMP #$01
-    ; BNE position_enemies_level_2
+    ; use zero page accordingly to the currenet level    
     LDA #<enemies_level_1
     STA $FB; Zero page
     LDA #>enemies_level_1
@@ -369,12 +366,13 @@ reset_enemy_array_completed
     LDY #$FF
 get_enemies_in_room                
     INY
+    ; ROOM
     LDA ($FB), y
     CMP current_room
-    BNE enemies_next_room    
-    ; positioning sprites
-    INY     
-    LDA ($FB),y ; number of enemies
+    BNE skip_to_next_room        
+    ; NUMBER OF ENEMIES
+    INY         
+    LDA ($FB),y 
     TAX
 get_next_enemy
     CPX #$00
@@ -383,12 +381,12 @@ get_next_enemy
     DEX
     JMP get_next_enemy
     RTS
-enemies_next_room
+skip_to_next_room
     BCS enemies_positioning_completed
     INY
     LDA ($FB), y ; number of enemies
     TAX
-next_enemies_in_room
+skip_enemies_in_room
     CPX #$00
     BEQ get_enemies_in_room    
     INY ; sprite
@@ -397,11 +395,7 @@ next_enemies_in_room
     INY ; msb x  
     INY ; streatched  
     DEX
-    JMP next_enemies_in_room
-    ; init sprites according to rooms
-
-position_enemies_level_2
-    ;;
+    JMP skip_enemies_in_room    
 enemies_positioning_completed
     RTS
 
@@ -412,7 +406,7 @@ enemies_positioning_completed
     JSR .f_store_enemy_data
     CLC
     ADC #$80    
-    STA $07f9, x  
+    STA $07F9, x  ; start from sprite 3, $07FA, X: 1-> N
     ; Calculate sprite coordinate registry offset
     STX tmp_X        
     DEX
@@ -424,14 +418,14 @@ enemies_positioning_completed
     LDA ($FB), y ; sprite X        
     JSR .f_store_enemy_data
     ; D004, D006, D008, D00A, D00C, D00D
-    ; D004, (y-1)*2    
+    ; D004, (x-1)*2    
     STA $D004, x        
     ; SPRITE Y
     INY
     LDA ($FB), y ; sprite Y
     JSR .f_store_enemy_data
     ; D005, D007, D009, D00B, D00D, D00F
-    ; D005, (y-1)*2
+    ; D005, (x-1)*2
     STA $D005, x
     LDX tmp_X ; restore index Y        
     ; SPRITE MSB
@@ -463,7 +457,6 @@ no_stretched
     RTS
 
 .f_store_enemy_data
-    RTS
     STY tmp_Y
     LDY enemy_index
     STA enemies, y
@@ -1175,19 +1168,19 @@ current_level
     !byte $01
 
 
-!set drone_inactive = $07
-!set drone_left = $08
-!set drone_right = $08
-!set reaver_inactive = $09
-!set reaver_left = $0A
-!set reaver_right = $0B
-!set crusher_inactive = $0C
-!set crusher_left = $0D
-!set crusher_right = $0D
-!set hunter_inactive = $0E
-!set hunter_left = $0F
-!set hunter_right = $10
-!set generator = $11
+!set drone_inactive = $08
+!set drone_left = $09
+!set drone_right = $09
+!set reaver_inactive = $0A
+!set reaver_left = $0B
+!set reaver_right = $0C
+!set crusher_inactive = $0D
+!set crusher_left = $0E
+!set crusher_right = $0E
+!set hunter_inactive = $0F
+!set hunter_left = $10
+!set hunter_right = $11
+!set generator = $12
 
 sprite_mask
     !byte %00000001    
@@ -1202,7 +1195,9 @@ enemies_sprite_mask
 
 enemies_level_1    
     ;     LEVEL  /  # OF NEMIES
-    !byte $01,      $00
+    !byte $01,      $01
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   generator,         $9C,    $50,    $00,     $01
     !byte $02,      $00
     !byte $03,      $00
     !byte $04,      $00         
@@ -1219,7 +1214,7 @@ enemies_level_1
 enemy_index
     !byte $00
 
-enemies 
+enemies
     ;       SPRITE  X       Y       MSB
     !byte   $00,    $00,    $00,    $00
     !byte   $00,    $00,    $00,    $00
