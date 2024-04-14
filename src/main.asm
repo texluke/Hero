@@ -103,7 +103,7 @@ main
     STA $D003
 
     ; JSR .f_get_sprite_row_column
-    ; LDA #$29
+    ; LDA wall
     ; JSR .f_put_char
    
     JSR .f_set_irq
@@ -127,8 +127,8 @@ main
     lda $dd0d           	
 
     ; enable VIC-II to generate raster interrupts              
-    lda #$01
-    sta $d01a
+    lda #$03
+    sta $D01A
 
     ; raster line extra bit is msb in $d011
     lda $d011
@@ -169,14 +169,19 @@ main
     CPX #$00
     BEQ no_refres_needed
     DEC refresh_room    
-    JSR .f_draw_room
+    JSR .f_draw_room 
     JSR .f_position_enemies 
 
 no_refres_needed
-    JSR .f_move_hero
-    JSR .f_move_bullets
+    JSR .f_move_hero    
     JSR .f_hero_shooting
-    
+
+    ; move bullets
+    JSR .f_move_bullets        
+    JSR .f_move_enemies
+
+    JSR .f_check_bullets_collision
+
     !ifdef debug {
         LDY $d012
         CPY $d012
@@ -323,7 +328,7 @@ clear_last_line
 .f_set_color
     LDA #1
     LDX #0
-color_loop: 
+color_loop
     STA $d800,x
     STA $d800 + 250,x
     STA $d800 + 500,x
@@ -352,7 +357,7 @@ reset_enemy_array
     STA enemies, x
     TXA
     CLC
-    ADC #$04
+    ADC #$05 ;
     TAX
     JMP reset_enemy_array
 reset_enemy_array_completed
@@ -708,19 +713,23 @@ get_free_bullets
     TAX ; 2
     JMP get_free_bullets
 shoot    
-    STX tmp_2 ; store bullets array index
-    JSR .f_get_sprite_row_column ; use tmp
+    STX tmp_X ; store bullets array index    
+    JSR .f_get_hero_sprite_row_column ; use tmp
+    ; get bullet initial position
     INX
     INX
     INY
     INY
+    JSR .f_get_char
+    CMP wall
+    BEQ no_shoot
     ; choose the right char according to sprite coordinates (how?) and gun type    
     LDA #$2F    
     JSR .f_put_char
     STX tmp ; store bullet X
 
     ; store bullet position
-    LDX tmp_2 
+    LDX tmp_X 
     LDA #$01
     STA bullets, x
     INX
@@ -776,9 +785,9 @@ bullet_right
     INY
 put_bullet
     JSR .f_get_char
-    CMP #$29
+    CMP wall
     BEQ clear_bullet
-    CPY #$00
+    CPY #$FF
     BEQ clear_bullet
     CPY #$27
     BEQ clear_bullet
@@ -814,6 +823,59 @@ end_of_bullets
     RTS
 
 .f_move_enemies
+    RTS
+
+.f_check_bullets_collision
+    ; loop on all enemies
+
+    LDA $D019
+    AND #$02
+    CMP #$00
+    BEQ go_ahed
+    LDA #10
+go_ahed    
+    LDA #$04
+    JSR .f_get_sprite_row_column
+    LDA #04    
+    JSR .f_put_char
+    LDA #$03
+    JSR .f_get_sprite_row_column    
+    LDA #$03
+    JSR .f_put_char
+    LDA #$02
+    JSR .f_get_sprite_row_column    
+    LDA #$02
+    JSR .f_put_char
+
+
+
+;     LDX #$02
+; check_next_enemy
+;     LDA enemy_sprites, x
+;     CMP #$FF
+;     BEQ bullets_collision_end
+;     CMP #$00
+;     BEQ go_next_enemy
+    
+;     STX tmp_X
+;     STA tmp_A
+;     TXA
+;     JSR .f_get_sprite_row_column
+;     LDA #$01
+;     JSR .f_put_char
+
+;     LDA tmp_A
+;     LDX tmp_X
+; go_next_enemy    
+;     TXA
+;     CLC
+;     ADC #$05
+;     TAX
+;     JMP check_next_enemy
+; bullets_collision_end
+    RTS
+
+.f_check_enemies_collision
     RTS
 
 .f_check_backgroud_collision
@@ -891,19 +953,19 @@ set_row
     JSR .f_get_char    
     ; LDA #01
     ; JSR .f_put_char    
-    CMP #$29
+    CMP wall
     BEQ hit        
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char    
-    CMP #$29
+    CMP wall
     BEQ hit    
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char    
-    CMP #$29
+    CMP wall
     BEQ hit        
     DEX
     DEX
@@ -912,19 +974,19 @@ check_only_current
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char    
-    CMP #$29
+    CMP wall
     BEQ hit        
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char    
-    CMP #$29
+    CMP wall
     BEQ hit    
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char    
-    CMP #$29
+    CMP wall
     BEQ hit
     LDA #$00
     JMP f_check_backgroud_collision_end
@@ -934,7 +996,72 @@ hit
 f_check_backgroud_collision_end
     RTS
 
-.f_get_sprite_row_column
+.f_get_hero_sprite_row_column
+    STA tmp_A
+    LDA #$00
+    JSR .f_get_sprite_row_column
+    LDA tmp_A
+    RTS
+
+.f_get_sprite_row_column    
+    TAX
+    TAY
+    LDA $D010 ; sprite X MSB
+    AND sprite_mask, x
+    CMP #$00
+    BEQ row_0_32
+column_33_40
+    TYA
+    ASL ; *2, sprite offset in coordinate registries
+    TAX
+    LDA $D000, x ; sprite X coordinate
+    SEC
+    SBC border_width_x  
+    BMI right_negative_zone
+    LSR
+    LSR
+    LSR
+    SEC
+    ADC #32
+    JMP save_column_with_msb    
+right_negative_zone    
+    LSR
+    LSR
+    LSR
+save_column_with_msb 
+    TAY
+    JMP row
+row_0_32
+    TYA    
+    ASL ; *2, sprite offset in coordinate registries
+    TAX
+    LDA $D000, x ; sprite X coordinate
+    SEC
+    SBC border_width_x  
+    ;BMI left_negatize_zone
+    LSR
+    LSR
+    LSR
+    JMP save_column
+left_negatize_zone
+    LDA #$00 ; force 0
+save_column
+    TAY
+row    
+    INX 
+    LDA $D000, x ; sprite Y coordinate   
+    SEC    
+    SBC border_width_y
+    LSR
+    LSR
+    LSR
+    TAX ; row
+    ; LDA #$01
+    ; JSR .f_put_char
+
+    RTS
+
+.f_get_sprite_row_column_old
     ; Parameter
     ;   A => Sprite index
     ; Return 
@@ -962,22 +1089,55 @@ f_check_backgroud_collision_end
     ; LSR
     ; LSR
     ; LSR
-    ; TAX ; row   
-
-    LDA $D000 ; sprite X coordinate
+    ; TAX ; row       
+    
+    ASL ; X2, sprite offset in coordinate registries
+    TAX
+    TAY
+    LDA $D000, x ; sprite X coordinate
     SEC
-    SBC border_width_x    
+    SBC border_width_x        
     STA tmp    
-    LDA $D010 ; sprite X high bit
-    AND #$01
+    ; LDY #$00
+    LDA $D010 ; sprite X MSB
+    AND sprite_mask, x
+;     CMP #$00 
+;     BEQ clear_carry
+;     SEC
+;     JMP compute_column
+; clear_carry
+;     CLC
+; s    
+;     CPX #$00
+;     BEQ eos
+;     LSR
+;     JMP s
+; eos
+    ; CMP sprite_mask, x
+    ; BEQ compute_column        ; branch if 9th bit is 0        
+    ; INY
+    
+;    AND #$01
+;     AND sprite_mask, x
+;     CMP #$00
+;     BEQ clear_carry
+;     SEC
+;     JMP compute_column
+; clear_carry
+;     CLC    
+pre_compute_column
+    ; ???
     SBC #$00
+    ; MSB -> carry
     LSR
+compute_column    
     LDA tmp
     ROR        
     LSR
     LSR
     TAY ; column
-    LDA $D000 + $01 ; sprite Y coordinate   
+    INX 
+    LDA $D000, x ; sprite Y coordinate   
     SEC    
     SBC border_width_y
     LSR
@@ -1167,6 +1327,8 @@ current_room
 current_level 
     !byte $01
 
+wall 
+    !byte $29
 
 !set drone_inactive = $08
 !set drone_left = $09
@@ -1194,7 +1356,6 @@ enemies_sprite_mask
     !byte %10000000
 
 enemies_level_1    
-    ;     LEVEL  /  # OF NEMIES
     !byte $01,      $01
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   generator,         $9C,    $50,    $00,     $01
@@ -1214,15 +1375,17 @@ enemies_level_1
 enemy_index
     !byte $00
 
+enemy_sprites
+    ; two dummy byte to speed up the sprite calculation
+    !byte   $00, $00
 enemies
-    ;       SPRITE  X       Y       MSB
-    !byte   $00,    $00,    $00,    $00
-    !byte   $00,    $00,    $00,    $00
-    !byte   $00,    $00,    $00,    $00
-    !byte   $00,    $00,    $00,    $00
-    !byte   $00,    $00,    $00,    $00
-    !byte   $00,    $00,    $00,    $00
-    !byte   $00,    $00,    $00,    $00
+    ;       SPRITE  X       Y       MSB     HITS
+    !byte   $00,    $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00,    $00 
+    !byte   $00,    $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00,    $00
+    !byte   $00,    $00,    $00,    $00,    $00    
     !byte   $FF
 
 enemies_bullets
