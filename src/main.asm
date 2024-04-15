@@ -828,12 +828,11 @@ end_of_bullets
 .f_check_bullets_collision
     ; loop on all enemies
 
-    LDA $D019
-    AND #$02
+    LDA $D01F
     CMP #$00
-    BEQ go_ahed
-    LDA #10
-go_ahed    
+    BEQ nob_collision
+    ; sprite to backgroup collision
+nob_collision    
     LDA #$04
     JSR .f_get_sprite_row_column
     LDA #04    
