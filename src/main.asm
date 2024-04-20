@@ -347,6 +347,11 @@ color_loop
     LDA $D010
     AND #%00000011
     STA $D010
+    ; reset streatched for all enemied
+    LDA $D01D
+    AND #%00000011
+    STA $D01D
+    STA $D017
     ; reset enemies array
     LDX #$00
 reset_enemy_array    
@@ -442,7 +447,7 @@ enemies_positioning_completed
     LDA $D010
     ORA enemies_sprite_mask, x
     STA $D010    
-no_msb
+no_msb    
     ; SPRITE STRETCHED
     INY    
     LDA ($FB), y
@@ -458,7 +463,10 @@ no_stretched
     ; Enable sprite
     LDA $D015
     ORA enemies_sprite_mask, x
-    STA $D015   
+    STA $D015
+    ; Enemy hits   
+    LDA #$10
+    JSR .f_store_enemy_data
     RTS
 
 .f_store_enemy_data
@@ -832,19 +840,20 @@ end_of_bullets
     CMP #$00
     BEQ nob_collision
     ; sprite to backgroup collision
+    LDA #$01
 nob_collision    
-    LDA #$04
-    JSR .f_get_sprite_row_column
-    LDA #04    
-    JSR .f_put_char
-    LDA #$03
-    JSR .f_get_sprite_row_column    
-    LDA #$03
-    JSR .f_put_char
-    LDA #$02
-    JSR .f_get_sprite_row_column    
-    LDA #$02
-    JSR .f_put_char
+    ; LDA #$04
+    ; JSR .f_get_sprite_row_column
+    ; LDA #04    
+    ; JSR .f_put_char
+    ; LDA #$03
+    ; JSR .f_get_sprite_row_column    
+    ; LDA #$03
+    ; JSR .f_put_char
+    ; LDA #$02
+    ; JSR .f_get_sprite_row_column    
+    ; LDA #$02
+    ; JSR .f_put_char
 
 
 
