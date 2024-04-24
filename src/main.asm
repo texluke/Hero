@@ -127,7 +127,7 @@ main
     lda $dd0d           	
 
     ; enable VIC-II to generate raster interrupts              
-    lda #$03
+    lda #$01
     sta $D01A
 
     ; raster line extra bit is msb in $d011
@@ -180,7 +180,7 @@ no_refres_needed
     JSR .f_move_bullets        
     JSR .f_move_enemies
 
-    JSR .f_check_bullets_collision
+    ; JSR .f_check_bullets_collision
 
     !ifdef debug {
         LDY $d012
@@ -759,31 +759,80 @@ no_shoot
 .f_move_bullets
     LDX #$00
 bullet
-    STX tmp_5
+    STX tmp_X
     LDA bullets, x
     CMP #$01
     BEQ move_bullet
     CMP #$FF ; end of array
-    BEQ end_of_bullets
-    JMP get_next_bullet
+    BNE get_next_bullet
+    RTS
+
 move_bullet
+    JSR .f_move_bullet
+    // Check return
+    CMP #$00
+    BEQ get_next_bullet
+
+    ; check collision
+    LDA $D01F
+    CMP #$00
+    BEQ get_next_bullet
+
+    ; collision detected, lets investigate    
+    LSR ; skip hero
+    LSR ; skip bubble
+    LDX #$02
+sprite_loop
+    STX tmp
+    LSR
+    BCS sprite_collide
+    JMP next_sprite
+sprite_collide    
+    LDX bullet_x
+    LDY bullet_y   
+    LDA #$01     
+    JSR .f_put_char
+    JSR .f_clear_bullet 
+next_sprite
+    LDX tmp
+    INX
+    CPX #$08    
+    BNE sprite_loop
+
+    ; LDX bullet_x
+    ; LDY bullet_y        
+    ; JSR .f_put_char
+    ; JSR .f_clear_bullet 
+        
+get_next_bullet
+    LDA tmp_X    
+    CLC ; 2
+    ADC #$05 ; 2
+    TAX ; 2
+    JMP bullet
+end_of_bullets
+    RTS
+
+; on return, in A: $01 collision need to be checked, $00 otherwise
+.f_move_bullet
     INX ; X
     LDA bullets, x
-    STA tmp
+    STA bullet_x
     INX ; Y        
     LDA bullets, x
-    STA tmp_2
+    STA bullet_y
     INX ; char
     LDA bullets, x
-    STA tmp_3    
+    STA bullet_char    
     INX ; direction    
     LDA bullets, x
-    STA tmp_4
+    STA bullet_direction
+    ; remove old bullet
     LDA #$00
-    LDX tmp
-    LDY tmp_2
+    LDX bullet_x
+    LDY bullet_y
     JSR .f_put_char
-    LDA tmp_4
+    LDA bullet_direction
     CMP #$01
     BEQ bullet_right
     ; bullet left
@@ -791,7 +840,7 @@ move_bullet
     jmp put_bullet
 bullet_right
     INY
-put_bullet
+put_bullet    
     JSR .f_get_char
     CMP wall
     BEQ clear_bullet
@@ -799,17 +848,24 @@ put_bullet
     BEQ clear_bullet
     CPY #$27
     BEQ clear_bullet
-    LDA tmp_3
+    LDA bullet_char
     JSR .f_put_char    
-    ; update bullet position in array
+    ; store new Y
+    STY bullet_y
+    ; update bullet position in list
     TYA
-    LDX tmp_5
+    LDX tmp_X
     INX
     INX
-    STA bullets, x
-    JMP get_next_bullet
+    STA bullets, x    
+    LDA #$01
+    RTS
 clear_bullet
-    LDX tmp_5
+    JSR .f_clear_bullet
+    RTS
+
+.f_clear_bullet
+    LDX tmp_X
     LDA #$00
     STA bullets, x
     INX
@@ -819,15 +875,8 @@ clear_bullet
     INX
     STA bullets, x
     INX
-    STA bullets, x
-
-get_next_bullet
-    LDA tmp_5    
-    CLC ; 2
-    ADC #$05 ; 2
-    TAX ; 2
-    JMP bullet
-end_of_bullets
+    STA bullets, x       
+    LDA #$00
     RTS
 
 .f_move_enemies
@@ -915,12 +964,12 @@ contine_get_column
     SEC
     SBC border_width_x    
 get_column_msb
-    STA tmp 
+    STA tmp_A
     LDA hero_new_x_msb    
     AND #$01
     SBC #$00
     LSR
-    LDA tmp
+    LDA tmp_A
     ROR        
     LSR
     LSR
@@ -1069,91 +1118,6 @@ row
 
     RTS
 
-.f_get_sprite_row_column_old
-    ; Parameter
-    ;   A => Sprite index
-    ; Return 
-    ;   X => ROW
-    ;   Y => COLUMN      
-    ; (hate this but works better and faster then using switched index)
-
-    ; Fix it to handle x coordinate MSB
-    ; LDA hero_new_x
-    ; SEC
-    ; SBC border_width_x    
-    ; STA tmp    
-    ; LDA hero_new_x_msb
-    ; AND #$01
-    ; SBC #$00
-    ; LSR
-    ; LDA tmp
-    ; ROR        
-    ; LSR
-    ; LSR
-    ; TAY ; column
-    ; LDA hero_new_y
-    ; SEC    
-    ; SBC border_width_y
-    ; LSR
-    ; LSR
-    ; LSR
-    ; TAX ; row       
-    
-    ASL ; X2, sprite offset in coordinate registries
-    TAX
-    TAY
-    LDA $D000, x ; sprite X coordinate
-    SEC
-    SBC border_width_x        
-    STA tmp    
-    ; LDY #$00
-    LDA $D010 ; sprite X MSB
-    AND sprite_mask, x
-;     CMP #$00 
-;     BEQ clear_carry
-;     SEC
-;     JMP compute_column
-; clear_carry
-;     CLC
-; s    
-;     CPX #$00
-;     BEQ eos
-;     LSR
-;     JMP s
-; eos
-    ; CMP sprite_mask, x
-    ; BEQ compute_column        ; branch if 9th bit is 0        
-    ; INY
-    
-;    AND #$01
-;     AND sprite_mask, x
-;     CMP #$00
-;     BEQ clear_carry
-;     SEC
-;     JMP compute_column
-; clear_carry
-;     CLC    
-pre_compute_column
-    ; ???
-    SBC #$00
-    ; MSB -> carry
-    LSR
-compute_column    
-    LDA tmp
-    ROR        
-    LSR
-    LSR
-    TAY ; column
-    INX 
-    LDA $D000, x ; sprite Y coordinate   
-    SEC    
-    SBC border_width_y
-    LSR
-    LSR
-    LSR
-    TAX ; row
-    RTS
-
 .f_get_char
     ; Parameters 
     ;   X => ROW
@@ -1238,14 +1202,6 @@ f_update_facing_end
 ; temporary 
 tmp
     !byte $00
-tmp_2
-    !byte $00
-tmp_3
-    !byte $00
-tmp_4
-    !byte $00
-tmp_5
-    !byte $00
 
 tmp_A
     !byte $00
@@ -1294,6 +1250,15 @@ smoke_index_in
 smoke_index_out
     !byte $FF
 
+; EXPLOSIONS
+explosions
+    !byte $00, $00, $00, $00
+    !byte $00, $00, $00, $00
+    !byte $00, $00, $00, $00
+    !byte $00, $00, $00, $00
+    !byte $FF
+
+; HERO BULLETS
 bullets
     ; active, x, y, char, direction
     !byte $00, $00, $00, $00, $00
@@ -1327,6 +1292,15 @@ bullets
     !byte $00, $00, $00, $00, $00
     !byte $00, $00, $00, $00, $00
     !byte $FF
+
+bullet_x 
+    !byte $00
+bullet_y
+    !byte $00
+bullet_char
+    !byte $00
+bullet_direction
+    !byte $00
 
 ; Symbols
 current_room 
