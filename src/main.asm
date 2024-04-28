@@ -403,7 +403,7 @@ skip_enemies_in_room
     INY ; x
     INY ; y
     INY ; msb x  
-    INY ; streatched  
+    INY ; streatched      
     DEX
     JMP skip_enemies_in_room    
 enemies_positioning_completed
@@ -465,8 +465,18 @@ no_stretched
     ORA enemies_sprite_mask, x
     STA $D015
     ; Enemy hits   
-    LDA #$10
+    LDA #$10    
     JSR .f_store_enemy_data
+
+    ; Print sprite index
+    STX tmp_X
+    STY tmp_Y
+    TXA     
+    JSR .f_get_enemy_sprite_row_column
+    LDA tmp_X
+    JSR .f_put_char
+    LDX tmp_X
+    LDY tmp_Y
     RTS
 
 .f_store_enemy_data
@@ -767,8 +777,9 @@ bullet
     BNE get_next_bullet
     RTS
 
-move_bullet
+move_bullet    
     JSR .f_move_bullet
+    ;JMP get_next_bullet
     // Check return
     CMP #$00
     BEQ get_next_bullet
@@ -787,12 +798,17 @@ sprite_loop
     LSR
     BCS sprite_collide
     JMP next_sprite
-sprite_collide    
-    LDX bullet_x
-    LDY bullet_y   
-    LDA #$01     
-    JSR .f_put_char
-    JSR .f_clear_bullet 
+sprite_collide
+    JSR .f_get_enemy
+    ; load sprite data
+    ; check sprite row
+
+    ; check sprite bounding box    
+    ; LDX bullet_x
+    ; LDY bullet_y   
+    ; LDA #$01     
+    ; JSR .f_put_char
+    ; JSR .f_clear_bullet 
 next_sprite
     LDX tmp
     INX
@@ -811,6 +827,12 @@ get_next_bullet
     TAX ; 2
     JMP bullet
 end_of_bullets
+    RTS
+
+; X contains the sprite index   
+.f_get_enemy
+    LDA #$00
+
     RTS
 
 ; on return, in A: $01 collision need to be checked, $00 otherwise
@@ -1060,6 +1082,12 @@ f_check_backgroud_collision_end
     LDA tmp_A
     RTS
 
+.f_get_enemy_sprite_row_column    
+    CLC
+    ADC #$01
+    JSR .f_get_sprite_row_column
+    RTS
+
 .f_get_sprite_row_column    
     TAX
     TAY
@@ -1138,14 +1166,14 @@ row
     PHA ; save accumulator into stack
     
     LDA ScreenRAMRowTableLow, x
-    STA $FB ; Zero page unused byte
+    STA $FD ; Zero page unused byte
     LDA ScreenRAMRowTableHigh, x
-    STA $FC ; Zero page unused byte
+    STA $FE ; Zero page unused byte
 
     PLA ; load accumulator value (character to be printed)
 
     ; Zero Page Indirect-indexed addressing (works using Y as offet)
-    STA ($FB),y 
+    STA ($FD),y 
     RTS
 
 .f_get_joystick
