@@ -3,7 +3,13 @@
     "description": "Project Hero",
     "toolkit": "acme",
     "sources": [
-        "src/main.asm"
+        "src/main.asm",        
+        "src/enemy.asm",
+        "src/hero.asm",
+        "src/bullet.asm",
+        "src/common.asm",
+        "src/variables.asm",
+        "src/const.asm"
     ],
     "build": "debug",
     "definitions": [],
