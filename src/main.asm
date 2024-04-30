@@ -173,11 +173,10 @@ main
     JSR .f_position_enemies 
 
 no_refres_needed
-    JSR .f_move_hero    
-    JSR .f_hero_shooting
-
-    ; move bullets
-    JSR .f_move_bullets        
+    ; check the better order to do that
+    JSR .f_move_hero        
+    JSR .f_move_bullets            
+    JSR .f_hero_shooting    
     JSR .f_move_enemies
 
     ; JSR .f_check_bullets_collision
@@ -668,6 +667,10 @@ room_down
 
 finalize_hero_move
     ; if no collision, finalize move
+    ; JSR .f_get_shooting_char
+    ; LDA #$00
+    ; JSR .f_put_char
+
     LDA hero_new_x
     STA hero_x
     STA $D000
@@ -694,9 +697,64 @@ set_hero_msb
     ; update current x msb
     LDA hero_new_x_msb
     STA hero_x_msb    
-    
+    ; shooting point
+    ; JSR .f_get_shooting_char    
+    ; JSR .f_put_char
     ; smoke    
 hero_no_move
+    RTS
+
+.f_get_shooting_char
+    JSR .f_get_hero_sprite_row_column        
+    ; X
+    TXA
+    // multiply x 8
+    ASL
+    ASL
+    ASL
+    STA tmp_A    
+    ; y down at least one
+    INX
+    LDA $D001
+    SEC
+    SBC border_width_y
+    SEC
+    SBC tmp_A
+    CMP #$04
+    BPL add_another_one
+    CMP #$02
+    BPL set_low_bullet
+    ; middle
+    LDA #$30
+    JMP get_y
+set_low_bullet    
+    LDA #$31
+    JMP get_y
+add_another_one
+    INX     
+    CMP #$06
+    BPL set_upper_bullet
+    ; middle
+    LDA #$30
+    JMP get_y
+set_upper_bullet
+    LDA #$2F
+    JMP get_y
+get_y
+    ; store char
+    STA tmp_A
+    LDA hero_facing
+    CMP #$01
+    BEQ shoot_right    
+    JMP get_shooting_char_end    
+shoot_right
+    // X (in Y registry!!)        
+    INY
+    INY
+    INY    
+    BCC get_shooting_char_end   
+get_shooting_char_end
+    LDA tmp_A
     RTS
 
 .f_hero_shooting
@@ -732,33 +790,41 @@ get_free_bullets
     JMP get_free_bullets
 shoot    
     STX tmp_X ; store bullets array index    
-    JSR .f_get_hero_sprite_row_column ; use tmp
-    ; get bullet initial position
-    INX
-    INX
-    INY
-    INY
+    JSR .f_get_shooting_char
+    STA tmp_A ; store shooting char
+    ; JSR .f_get_hero_sprite_row_column ; use tmp
+    ; ; get bullet initial position
+    ; INX
+    ; INX
+    ; INY
+    ; INY
     JSR .f_get_char
     CMP wall
     BEQ no_shoot
     ; choose the right char according to sprite coordinates (how?) and gun type    
-    LDA #$2F    
+    ; LDA #$2F    
+    LDA tmp_A
     JSR .f_put_char
     STX tmp ; store bullet X
 
     ; store bullet position
     LDX tmp_X 
+    ; ACTIVE
     LDA #$01
     STA bullets, x
+    ; X
     INX
     LDA tmp
     STA bullets, x
+    ; Y
     INX
     TYA
     STA bullets, x
+    ; CHAR
     INX
-    LDA #$2F
+    LDA tmp_A
     STA bullets, x
+    ; DIRECTION
     INX
     LDA hero_facing
     STA bullets, x
@@ -1107,7 +1173,7 @@ column_33_40
     LSR
     LSR
     SEC
-    ADC #32
+    ADC #31
     JMP save_column_with_msb    
 right_negative_zone    
     LSR
@@ -1151,10 +1217,10 @@ row
     ;   X => ROW
     ;   Y => COLUMN      
     LDA ScreenRAMRowTableLow, x
-    STA $FB;
+    STA $FD;
     LDA ScreenRAMRowTableHigh, x
-    STA $FC;    
-    LDA ($FB),y 
+    STA $FE;    
+    LDA ($FD),y 
     RTS
 
 .f_put_char
@@ -1197,9 +1263,11 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
         sty dy        ; to move up the screen and the backward
         rts           ; position to move down screen.
 
-.f_update_facing
+.f_update_facing    
     CMP #$01
     BEQ turn_right
+    LDA #$00
+    STA hero_facing_switched
     ; turn left
     LDA hero_facing 
     CMP #$00
@@ -1208,11 +1276,13 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
     LDA #$80
     STA $07f8
     DEC hero_facing    
-    LDA #$02
+    LDA #$01
     STA hero_facing_switched
     ; update hero sprite
     JMP f_update_facing_end
 turn_right
+    LDA #$00
+    STA hero_facing_switched
     LDA hero_facing
     CMP #$01    
     BEQ f_update_facing_end
@@ -1220,7 +1290,7 @@ turn_right
     LDA #$81
     STA $07f8
     INC hero_facing
-    LDA #$02
+    LDA #$01
     STA hero_facing_switched
 f_update_facing_end
     RTS

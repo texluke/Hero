@@ -7,7 +7,7 @@ jmp main
 
 *=$8000 
 
-!set debug = $01
+!set debug = $0
 
 main
     ; border and screen color
@@ -20,7 +20,7 @@ main
     JSR .f_clear
 
     ; load sprite 
-    LDA #$83
+    LDA #$84
     STA $07f8
 
     ; Configure sprite colors
@@ -204,6 +204,9 @@ end_move
     LDA hero_new_y
     STA $D001
     STA hero_y
+
+    LDA $D001
+    STA hero_old_y
     
     JSR .f_clear_highlight
     JSR .f_highlight
@@ -290,21 +293,91 @@ hit
     RTS
 
 .f_highlight
-    JSR .f_get_sprite_row_column
+    JSR .f_get_hero_sprite_row_column
     STX sprite_char_x
     STY sprite_char_y         
-;     LDA hero_facing
-;     CMP #$00 ; left
-;     BEQ not_inc
-;     INY
-; not_inc    
+    
     INY
+    TXA
+    // multiply x 8
+    ASL
+    ASL
+    ASL
+    STA tmp_A
+    LDA #$00
+    JSR .f_put_char
     LDA marker
+    INX    
+    JSR .f_put_char
+    INX
+    JSR .f_put_char
+    DEX
+    DEX
+    INY
     JSR .f_put_char
     INX    
     JSR .f_put_char
     INX    
+    JSR .f_put_char 
+    ; Shoot
+    DEX
+    DEX
+    INY
+    INX
+    LDA $D001
+    STA hero_old_y
+    SEC
+    SBC border_width_y
+    SEC
+    SBC tmp_A
+    CMP #$04
+    BPL add_another_one
+    CMP #$02
+    BPL set_low_bullet
+    ; middle
+    LDA #68
+    JMP put_char
+set_low_bullet    
+    LDA #67
+    JMP put_char
+add_another_one
+    INX     
+    CMP #$06
+    BPL set_upper_bullet
+    LDA #68
+    JMP put_char
+set_upper_bullet
+    LDA #69
+    JMP put_char
+put_char
+    ; 67 low
+    ; 68 middle
+    ; 69 top
+        
     JSR .f_put_char
+
+    RTS
+
+.f_clear_highlight
+    
+    LDX sprite_char_x
+    LDY sprite_char_y
+    LDA #$20    
+    INY   
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX
+    JSR .f_put_char
+    DEX
+    DEX
+    INY
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char
+    INX    
+    JSR .f_put_char  
+    ; shoot   
     DEX
     DEX
     INY
@@ -313,46 +386,7 @@ hit
     JSR .f_put_char
     INX    
     JSR .f_put_char    
-    RTS
-
-.f_clear_highlight
-    
-    LDX sprite_char_x
-    LDY sprite_char_y
-    ; clear column
-
-;     LDA hero_facing
-;     CMP #$00 ; left
-;     BEQ not_inc_clean
-;     INY
-; not_inc_clean   
-    INY
-    LDA #$20
     JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    DEX
-    DEX
-    INY
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char
-    INX    
-    JSR .f_put_char   
-
-    ; DEX 
-    ; DEX
-    ; DEX
-    ; INY
-    ; JSR .f_put_char
-    ; INX        
-    ; JSR .f_put_char
-    ; INX    
-    ; JSR .f_put_char
-    ; INX    
-    ; JSR .f_put_char  
 
     RTS
 
@@ -438,34 +472,75 @@ djr3    lsr           ; dy=0 (move down screen), dy=0 (no y change).
     LDA ($FB),y 
     RTS
 
-.f_get_sprite_row_column
-    ; Parameter
-    ;   A => Sprite index
-    ; Return 
-    ;   X => ROW
-    ;   Y => COLUMN      
-    ; (hate this but works better and faster then using switched index)
+.f_get_hero_sprite_row_column
+    STA tmp_A
+    LDA #$00
+    JSR .f_get_sprite_row_column
+    LDA tmp_A
+    RTS
 
-    LDA $D000 ; sprite X coordinate
+.f_get_enemy_sprite_row_column    
+    CLC
+    ADC #$01
+    JSR .f_get_sprite_row_column
+    RTS
+
+.f_get_sprite_row_column    
+    TAX
+    TAY
+    LDA $D010 ; sprite X MSB
+    AND sprite_mask, x
+    CMP #$00
+    BEQ row_0_32
+column_33_40
+    TYA
+    ASL ; *2, sprite offset in coordinate registries
+    TAX
+    LDA $D000, x ; sprite X coordinate
     SEC
-    SBC #$18  ; X border width 
-    STA tmp    
-    LDA $D010 ; sprite X high bit
-    AND #$01
-    SBC #$00
-    LSR
-    LDA tmp
-    ROR        
+    SBC border_width_x  
+    BMI right_negative_zone
     LSR
     LSR
-    TAY ; column
-    LDA $D000 + $01 ; sprite Y coordinate   
+    LSR
+    SEC
+    ADC #31
+    JMP save_column_with_msb    
+right_negative_zone    
+    LSR
+    LSR
+    LSR
+save_column_with_msb 
+    TAY
+    JMP row
+row_0_32
+    TYA    
+    ASL ; *2, sprite offset in coordinate registries
+    TAX
+    LDA $D000, x ; sprite X coordinate
+    SEC
+    SBC border_width_x  
+    ;BMI left_negatize_zone
+    LSR
+    LSR
+    LSR
+    JMP save_column
+left_negatize_zone
+    LDA #$00 ; force 0
+save_column
+    TAY
+row    
+    INX 
+    LDA $D000, x ; sprite Y coordinate   
     SEC    
-    SBC #$32 ; Y border width
+    SBC border_width_y
     LSR
     LSR
     LSR
     TAX ; row
+    ; LDA #$01
+    ; JSR .f_put_char
+
     RTS
 
 
@@ -516,6 +591,9 @@ hero_new_msb_x
 hero_new_y
     !byte $00
 
+hero_old_y
+    !byte $00
+
 sprite_char_x
     !byte $00
 
@@ -527,3 +605,23 @@ hero_moved
 
 hero_facing
     !byte $01 ; right 
+
+sprite_mask
+    !byte %00000001    
+enemies_sprite_mask 
+    !byte %00000010
+    !byte %00000100
+    !byte %00001000
+    !byte %00010000
+    !byte %00100000
+    !byte %01000000
+    !byte %10000000
+
+tmp_A
+    !byte $00
+
+border_width_x
+    !byte $18
+
+border_width_y
+    !byte $32
