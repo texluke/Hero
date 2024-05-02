@@ -15,7 +15,6 @@
 !bin "../resources/level_1.bin"
 
 
-
 *=$0801
 !byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
 jmp main
@@ -52,7 +51,7 @@ hero_new_y
     !byte $00
 
 main
-    jsr $1000
+    jsr $1003
 
     ; set font at $2800
     LDA $D018
@@ -567,10 +566,11 @@ hit
 f_check_backgroud_collision_end
     RTS
 
+; Include sources
+!source "src/bullet.asm"
+!source "src/common.asm"
+!source "src/const.asm"
+!source "src/enemy.asm"
+!source "src/hero.asm"
+!source "src/variables.asm"
 
-
-
-
-
-
-;!source "src/variables.asm"
