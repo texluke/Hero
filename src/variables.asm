@@ -157,10 +157,29 @@ enemies
     !byte   $00,    $00,    $00,    $00,    $00    
     !byte   $FF
 
+enemy_sprite
+    !byte $00
+
+enemy_x
+    !byte $00
+
+enemy_y
+    !byte $00
+
+enemy_msb
+    !byte $00
+
+enemy_hits
+    !byte $00
+
+
 enemies_bullets
 
 !set level_width = $03
 !set level_heigh = $03    
+
+move_bullet_wait 
+    !byte $00
 
 SCRN  = $0400
 ScreenRAMRowTableLow

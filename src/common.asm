@@ -113,3 +113,26 @@ djr3
         sty dy        ; to move up the screen and the backward
         rts           ; position to move down screen.
 
+; 
+; Parameters
+;   [A] value to added
+inc_value_x !byte $00
+.f_inc_X
+    STA inc_value_x
+    TXA
+    CLC
+    ADC inc_value_x
+    TAX    
+    RTS
+
+; 
+; Parameters
+;   [A] value to added
+inc_value_y !byte $00
+.f_inc_Y
+    STA inc_value_y
+    TYA
+    CLC
+    ADC inc_value_y
+    TAY    
+    RTS

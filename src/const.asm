@@ -17,4 +17,9 @@
 !set bullet = $30
 !set bullet_low = $31
 
+free_bullet = $00
+active_bullet = $01
+exploded_bullet = $02
+
+
 

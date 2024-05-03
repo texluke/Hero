@@ -173,10 +173,27 @@ main
 
 no_refres_needed
     ; check the better order to do that
+    
+
+;     LDX move_bullet_wait
+;     CPX #$01
+;     BEQ lets_move_bullet
+;     INX
+;     STX move_bullet_wait
+;     JMP lets_skip_move_bullet
+; lets_move_bullet
+    LDX #$00
+    STX move_bullet_wait
     JSR .f_move_hero
     JSR .f_move_bullets
     JSR .f_hero_shooting
+    JSR .f_check_hero_bullets_collision
     JSR .f_move_enemies
+; lets_skip_move_bullet
+    
+
+    
+    
 
     ; JSR .f_check_bullets_collision
 

@@ -239,8 +239,8 @@ fire_pressed
     LDX #$00
 get_free_bullets
     LDA bullets, x
-    CMP #$00
-    BEQ shoot
+    CMP #free_bullet
+    BEQ shoot    
     CMP #$FF ; end of array
     BEQ no_shoot
     TXA ; 2
@@ -251,13 +251,7 @@ get_free_bullets
 shoot
     STX tmp_X ; store bullets array index
     JSR .f_get_shooting_char
-    STA tmp_A ; store shooting char
-    ; JSR .f_get_hero_sprite_row_column ; use tmp
-    ; ; get bullet initial position
-    ; INX
-    ; INX
-    ; INY
-    ; INY
+    STA tmp_A ; store shooting char    
     JSR .f_get_char
     CMP wall
     BEQ no_shoot
