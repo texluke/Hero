@@ -178,8 +178,11 @@ enemies_bullets
 !set level_width = $03
 !set level_heigh = $03    
 
-move_bullet_wait 
+hero_shoot_wait 
     !byte $00
+
+hero_power_up
+    !byte $01
 
 SCRN  = $0400
 ScreenRAMRowTableLow

@@ -174,27 +174,25 @@ main
 no_refres_needed
     ; check the better order to do that
     
-
-;     LDX move_bullet_wait
-;     CPX #$01
-;     BEQ lets_move_bullet
-;     INX
-;     STX move_bullet_wait
-;     JMP lets_skip_move_bullet
-; lets_move_bullet
-    LDX #$00
-    STX move_bullet_wait
     JSR .f_move_hero
     JSR .f_move_bullets
-    JSR .f_hero_shooting
+
+    ; hero shoot any two cycles to reduce number of bullents on the screen
+    LDX hero_shoot_wait
+    CPX #$01
+    BEQ let_shoot
+    INX
+    STX hero_shoot_wait
+    JMP skip_shoot
+let_shoot
+    LDX #$00
+    STX hero_shoot_wait
+     JSR .f_hero_shooting
+skip_shoot   
+    
     JSR .f_check_hero_bullets_collision
-    JSR .f_move_enemies
-; lets_skip_move_bullet
-    
-
-    
-    
-
+    JSR .f_move_enemies    
+            
     ; JSR .f_check_bullets_collision
 
     !ifdef debug {
@@ -376,20 +374,20 @@ color_loop
     CMP #$02
     BPL set_low_bullet
     ; middle
-    LDA #$30
+    JSR .f_get_shooting_char_middle
     JMP get_y
 set_low_bullet
-    LDA #$31
+    JSR .f_get_shooting_char_low
     JMP get_y
 add_another_one
     INX
     CMP #$06
     BPL set_upper_bullet
     ; middle
-    LDA #$30
+    JSR .f_get_shooting_char_middle
     JMP get_y
 set_upper_bullet
-    LDA #$2F
+    JSR .f_get_shooting_char_high
     JMP get_y
 get_y
     ; store char
@@ -408,9 +406,52 @@ get_shooting_char_end
     LDA tmp_A
     RTS
 
+.f_get_shooting_char_high
+    LDA hero_power_up
+    CMP #$01
+    BEQ char_high_powerup
+    LDA #bullet_high
+    RTS
+char_high_powerup    
+    LDA hero_facing
+    CMP #$01
+    BEQ char_high_left_powerup
+    LDA #bullet_high_left_powerup
+    RTS
+char_high_left_powerup
+    LDA #bullet_low_right_powerup
+    RTS
 
+.f_get_shooting_char_middle
+    LDA hero_power_up
+    CMP #$01
+    BEQ char_middle_powerup
+    LDA #bullet
+    RTS
+char_middle_powerup    
+    LDA hero_facing
+    CMP #$01
+    BEQ char_middle_right_powerup
+    LDA #bullet_left_powerup
+    RTS
+char_middle_right_powerup
+    LDA #bullet_right_powerup
+    RTS
 
-
+.f_get_shooting_char_low
+    LDA hero_power_up
+    CMP #$01
+    BEQ char_low_powerup
+    LDA #bullet_low
+    RTS
+char_low_powerup    
+    LDA hero_facing
+    CMP #$01
+    BEQ char_low_right_powerup
+    LDA #bullet_low_left_powerup
+char_low_right_powerup
+    LDA #bullet_low_right_powerup
+    RTS
 
 .f_check_bullets_collision
     ; loop on all enemies

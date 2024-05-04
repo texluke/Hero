@@ -13,9 +13,17 @@
 !set generator = $12
 
 
-!set bullet_hight = $2F
-!set bullet = $30
-!set bullet_low = $31
+bullet_high = $2F
+bullet = $30
+bullet_low = $31
+
+bullet_high_right_powerup = $32
+bullet_right_powerup = $33
+bullet_low_right_powerup = $34
+
+bullet_high_left_powerup = $35
+bullet_left_powerup = $36
+bullet_low_left_powerup = $37
 
 free_bullet = $00
 active_bullet = $01
