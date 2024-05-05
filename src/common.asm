@@ -4,45 +4,48 @@
     LDA $D010 ; sprite X MSB
     AND sprite_mask, x
     CMP #$00
-    BEQ row_0_32
-column_33_40
+    BEQ +++ ; column 0/31
+    ; column 32/40
     TYA
     ASL ; *2, sprite offset in coordinate registries
     TAX
     LDA $D000, x ; sprite X coordinate
     SEC
     SBC border_width_x
-    BMI right_negative_zone
+    BMI +
+    ; divide and add row offset
     LSR
     LSR
     LSR
     SEC
     ADC #31
-    JMP save_column_with_msb
-right_negative_zone
+    JMP ++
++
+    ; just divide
     LSR
     LSR
     LSR
-save_column_with_msb
+++
     TAY
-    JMP row
-row_0_32
+    JMP +++++
++++ 
+    ; sprite 0/255 px (column 0/31)
     TYA
     ASL ; *2, sprite offset in coordinate registries
     TAX
     LDA $D000, x ; sprite X coordinate
     SEC
-    SBC border_width_x
-    ;BMI left_negatize_zone
+    SBC border_width_x    
     LSR
     LSR
     LSR
-    JMP save_column
-left_negatize_zone
+    JMP ++++
     LDA #$00 ; force 0
-save_column
+++++
     TAY
-row
+
+; calculate row
++++++
     INX
     LDA $D000, x ; sprite Y coordinate
     SEC
@@ -53,7 +56,6 @@ row
     TAX ; row
     ; LDA #$01
     ; JSR .f_put_char
-
     RTS
 
 .f_get_char
@@ -93,21 +95,21 @@ djrrb
         ldy #0        ; this routine reads and decodes the
         ldx #0        ; joystick/firebutton input data in
         lsr           ; the accumulator. this least significant
-        bcs djr0      ; 5 bits contain the switch closure
+        bcs +         ; 5 bits contain the switch closure
         dey           ; information. if a switch is closed then it
-djr0    
++    
         lsr           ; produces a zero bit. if a switch is open then
-        bcs djr1      ; it produces a one bit. The joystick dir-
+        bcs ++        ; it produces a one bit. The joystick dir-
         iny           ; ections are right, left, forward, backward
-djr1    
+++    
         lsr           ; bit3=right, bit2=left, bit1=backward,
-        bcs djr2      ; bit0=forward and bit4=fire button.
+        bcs +++       ; bit0=forward and bit4=fire button.
         dex           ; at rts time dx and dy contain 2's compliment
-djr2    
++++    
         lsr           ; direction numbers i.e. $ff=-1, $00=0, $01=1.
-        bcs djr3      ; dx=1 (move right), dx=-1 (move left),
+        bcs ++++      ; dx=1 (move right), dx=-1 (move left),
         inx           ; dx=0 (no x change). dy=-1 (move up screen),
-djr3
+++++
         lsr           ; dy=0 (move down screen), dy=0 (no y change).
         stx dx        ; the forward joystick position corresponds
         sty dy        ; to move up the screen and the backward

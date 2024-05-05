@@ -409,47 +409,48 @@ get_shooting_char_end
 .f_get_shooting_char_high
     LDA hero_power_up
     CMP #$01
-    BEQ char_high_powerup
+    BEQ +
     LDA #bullet_high
     RTS
-char_high_powerup    
++    
     LDA hero_facing
     CMP #$01
-    BEQ char_high_left_powerup
+    BEQ +
     LDA #bullet_high_left_powerup
     RTS
-char_high_left_powerup
++
     LDA #bullet_low_right_powerup
     RTS
 
 .f_get_shooting_char_middle
     LDA hero_power_up
     CMP #$01
-    BEQ char_middle_powerup
+    BEQ +
     LDA #bullet
     RTS
-char_middle_powerup    
++    
     LDA hero_facing
     CMP #$01
-    BEQ char_middle_right_powerup
+    BEQ +
     LDA #bullet_left_powerup
     RTS
-char_middle_right_powerup
++
     LDA #bullet_right_powerup
     RTS
 
 .f_get_shooting_char_low
     LDA hero_power_up
     CMP #$01
-    BEQ char_low_powerup
+    BEQ +
     LDA #bullet_low
     RTS
-char_low_powerup    
++    
     LDA hero_facing
     CMP #$01
-    BEQ char_low_right_powerup
+    BEQ +
     LDA #bullet_low_left_powerup
-char_low_right_powerup
+    RTS
++
     LDA #bullet_low_right_powerup
     RTS
 

@@ -1,20 +1,21 @@
 ; Move active bullets in bullets array
 .f_move_bullets
     LDX #$00
-move_next_bullet
+-
+    ; bullet loop
     STX tmp_X
     LDA bullets, x
     CMP #active_bullet
-    BEQ move_bullet
+    BEQ +
     CMP #exploded_bullet
-    BEQ move_explosion
+    BEQ ++
     CMP #$FF ; end of array
-    BNE move_to_next_bullet
+    BNE +++
     RTS
-move_bullet
++   ; move bulley
     JSR .f_move_bullet 
-    JMP move_to_next_bullet
-move_explosion
+    JMP +++
+++  ; handle explosion
     INX 
     LDA bullets, x
     INX 
@@ -23,12 +24,11 @@ move_explosion
     LDA #$00
     JSR .f_put_char
     JSR .f_clear_bullet    
-move_to_next_bullet        
++++        
     LDX tmp_X
     LDA #$05    
     JSR .f_inc_X    
-    JMP move_next_bullet
-end_of_bullets
+    JMP -
     RTS
 
 ; X contains the sprite index
@@ -58,20 +58,21 @@ end_of_bullets
     JSR .f_put_char
     LDA bullet_direction
     CMP #$01
-    BEQ bullet_right
+    BEQ +
     ; bullet left
     DEY
-    jmp put_bullet
-bullet_right
+    jmp ++
++
+    ; bullet right
     INY
-put_bullet
+++
     JSR .f_get_char
     CMP wall
-    BEQ clear_bullet
+    BEQ +
     CPY #$FF
-    BEQ clear_bullet
+    BEQ +
     CPY #$27
-    BEQ clear_bullet
+    BEQ +
     LDA bullet_char
     JSR .f_put_char
     ; store new Y
@@ -84,7 +85,7 @@ put_bullet
     STA bullets, x
     LDA #$01
     RTS
-clear_bullet
++
     JSR .f_clear_bullet
     RTS
 
@@ -104,15 +105,15 @@ clear_bullet
 
 .f_check_hero_bullets_collision
     LDX #$00
-check_next_bullet
+--
     STX tmp_X 
     LDA bullets, x
     CMP #$01
-    BEQ check_collision
+    BEQ +
     CMP #$FF ; end of array
-    BNE check_to_next_bullet
+    BNE +++
     RTS
-check_collision
++
     ; init bullet data
     INX ; X
     LDA bullets, x
@@ -131,13 +132,13 @@ check_collision
     LDY #$00
     LDA #$01
     STA enemy_index
-check_enemy    
+-   ; check enemy    
     STY tmp_Y
     LDA enemies, y
     CMP #$FF
-    BEQ check_to_next_bullet
+    BEQ +++
     CMP #$00
-    BEQ check_next_enemy            
+    BEQ ++            
     STA enemy_sprite
     INY
     LDA enemies, y
@@ -153,19 +154,18 @@ check_enemy
     STA enemy_hits
     JSR .f_check_enemy_bullet_collision    
 
-check_next_enemy
+++
     LDY tmp_Y
     LDA #$05
     JSR .f_inc_Y
     INC enemy_index
-    JMP check_enemy
+    JMP -
     
-check_to_next_bullet
++++ ; next bullet
     LDX tmp_X
     LDA #$05    
     JSR .f_inc_X    
-    JMP check_next_bullet
-end_of_check
+    JMP --
     RTS
 
 .f_check_enemy_bullet_collision
@@ -174,26 +174,26 @@ end_of_check
     ; row
     INX
     CPX bullet_x
-    BEQ check_y
+    BEQ +
     INX
     CPX bullet_x
-    BEQ check_y
+    BEQ +
     INX
     CPX bullet_x
-    BEQ check_y
+    BEQ +
     RTS
-check_y
++
     CPY bullet_y
-    BEQ kill_it
+    BEQ ++
     INY 
     CPY bullet_y
-    BEQ kill_it
+    BEQ ++
     INY 
     CPY bullet_y
-    BEQ kill_it
+    BEQ ++
     RTS
 
-kill_it    
+++    
     LDA #$38
     JSR .f_put_char
     LDX tmp_X

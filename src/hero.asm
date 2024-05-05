@@ -22,13 +22,13 @@
     ; get joystic button
     JSR .f_get_joystick
     CPX #$01
-    BEQ move_hero_right
+    BEQ +
     CPX #$FF
-    BEQ move_hero_left
+    BEQ ++
     JMP hero_move_up_down
 
-move_hero_right
-    ; move right
++
+    ; MOVE RIGHT
     LDA hero_moved
     ORA #$01
     STA hero_moved
@@ -37,15 +37,15 @@ move_hero_right
     LDA hero_x
     CLC
     ADC #$2
-    BNE end_hero_move_left_right
+    BNE +++
     TAX
     LDA hero_x_msb
     ORA #%00000001
     STA hero_new_x_msb
     TXA
-    JMP end_hero_move_left_right
-move_hero_left
-    ; move hero left
+    JMP +++
+++
+    ; MOVE LEFT
     LDA hero_moved
     ORA #$02
     STA hero_moved
@@ -54,37 +54,39 @@ move_hero_left
     LDA hero_x
     SEC
     SBC #$2
-    BPL end_hero_move_left_right
+    BPL +++
     TAX
     LDA hero_x_msb
     AND #%11111110
     STA hero_new_x_msb
     TXA
-end_hero_move_left_right
++++
     STA hero_new_x
 
 hero_move_up_down
     CPY #$01
-    BEQ hero_move_down
+    BEQ +
     CPY #$FF
-    BEQ hero_move_up
+    BEQ ++
     JMP end_hero_move
-hero_move_down
++
+    ; MOVE DOWN
     LDA hero_moved
     ORA #$04
     STA hero_moved
     LDA hero_y
     CLC
     ADC #$2
-    JMP end_hero_move_up_down
-hero_move_up
+    JMP +++
+++
+    ; MOVE UP
     LDA hero_moved
     ORA #$08
     STA hero_moved
     LDA hero_y
     SEC
     SBC #$2
-end_hero_move_up_down
++++
     STA hero_new_y
 
 end_hero_move
@@ -97,50 +99,53 @@ move_hero_contine
     ; check collision
     JSR .f_check_backgroud_collision
     CMP #$01
-    BNE check_left
+    BNE +
+    ; COOLLIDE!!!!
     LDA $D015        ; show bubble on collision
     ORA #%00000011
     STA $D015
     RTS ; no move, return
 
     ; room switching
-check_left
++
+    ; LEFT
     LDA hero_new_x
     CMP #$00
-    BNE check_right
+    BNE ++
     LDA hero_new_x_msb
     AND #$01
     CMP #$00
     BEQ room_left
-check_right
+++
+    ; RIGHT
     LDA hero_new_x
     CMP #$58
-    BNE check_up
+    BNE +++
     LDA hero_new_x_msb
     AND #$01
     CMP #$01
     BEQ room_right
-check_up
++++
+    ; UP
     LDA hero_new_y
     CMP #$10
-    BNE check_down
-    ; check direction
+    BNE ++++    
     LDA hero_moved
     AND #$08
     CMP #$00
     BNE room_up
-check_down
-    ; check direction
+++++
+    ; DOWN    
     LDA hero_new_y
     CMP #$FE
-    BNE finalize_hero_move
-    ; check direction
+    BNE +
     LDA hero_moved
     AND #$04
     CMP #$00
     BNE room_down
-    JMP finalize_hero_move
+    JMP +
 
+; ROOM SWITCHING
 room_left
     LDA #$58
     STA hero_new_x
@@ -150,7 +155,7 @@ room_left
     ; switch room left
     DEC current_room
     INC refresh_room
-    JMP finalize_hero_move
+    JMP +
 room_right
     LDA #$00
     STA hero_new_x
@@ -160,7 +165,7 @@ room_right
     ; switch room left
     INC current_room
     INC refresh_room
-    JMP finalize_hero_move
+    JMP +
 room_up
     LDA #$FE
     STA hero_new_y
@@ -168,7 +173,7 @@ room_up
     DEC current_room
     DEC current_room
     INC refresh_room
-    JMP finalize_hero_move
+    JMP +
 room_down
     LDA #$10
     STA hero_new_y
@@ -176,9 +181,8 @@ room_down
     INC current_room
     INC current_room
     INC refresh_room
-    JMP finalize_hero_move
 
-finalize_hero_move
++
     ; if no collision, finalize move
     ; JSR .f_get_shooting_char
     ; LDA #$00
@@ -197,17 +201,17 @@ finalize_hero_move
     LDA hero_new_x_msb
     AND #%00000001
     CMP #$01
-    BEQ hero_msb_1
+    BEQ +
     LDA $D010
     AND #%11111100 ; force 1 msb for sprite 2 (bubble)
-    JMP set_hero_msb
-hero_msb_1
-    ;LDA hero_new_x_msb
+    JMP ++
++
+    ; MSB
     LDA $D010
     ORA #%00000011 ; force 1 msb for sprite 2 (bubble)
-set_hero_msb
-    STA $D010
-    ; update current x msb
+++
+    ; SAVE MSB
+    STA $D010    
     LDA hero_new_x_msb
     STA hero_x_msb
     ; shooting point
@@ -294,6 +298,7 @@ no_shoot
     RTS
 
 .f_update_facing
+    ; in A the facing to be stored
     CMP #$01
     BEQ turn_right
     LDA #$00
