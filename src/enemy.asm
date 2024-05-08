@@ -44,9 +44,9 @@ get_enemies_in_room
     INY
     LDA ($FB),y
     TAX
-    ; DEX ; use zero based index (CPX #$FF)
+    DEX ; use zero based index (CPX #$FF)
 get_next_enemy
-    CPX #$00
+    CPX #$FF
     BEQ enemies_positioning_completed
     JSR .f_init_enemy
     DEX
@@ -77,10 +77,10 @@ enemies_positioning_completed
     JSR .f_store_enemy_data
     CLC
     ADC #$80
-    STA $07F9, x  ; start from sprite 3, $07FA, X: 1-> N
+    STA $07FA, x  ; start from sprite 3, $07FA, X: 1-> N
     ; Calculate sprite coordinate registry offset
     STX tmp_X
-    DEX
+    ; DEX
     TXA
     ASL ; multiply * 2
     TAX
@@ -175,6 +175,6 @@ no_stretched
 
 .f_get_enemy_sprite_row_column
     CLC
-    ADC #$01
+    ADC #$02
     JSR .f_get_sprite_row_column
     RTS

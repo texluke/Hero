@@ -175,23 +175,23 @@ no_refres_needed
     ; check the better order to do that
     
     JSR .f_move_hero
-    JSR .f_move_bullets
+;     JSR .f_move_bullets
 
-    ; hero shoot any two cycles to reduce number of bullents on the screen
-    LDX hero_shoot_wait
-    CPX #$02
-    BEQ let_shoot
-    INX
-    STX hero_shoot_wait
-    JMP skip_shoot
-let_shoot
-    LDX #$00
-    STX hero_shoot_wait    
-    JSR .f_hero_shooting
-skip_shoot   
+;     ; hero shoot any two cycles to reduce number of bullents on the screen
+;     LDX hero_shoot_wait
+;     CPX #$02
+;     BEQ let_shoot
+;     INX
+;     STX hero_shoot_wait
+;     JMP skip_shoot
+; let_shoot
+;     LDX #$00
+;     STX hero_shoot_wait    
+;     JSR .f_hero_shooting
+; skip_shoot   
     
-    JSR .f_check_hero_bullets_collision    
-    JSR .f_move_enemies    
+;     JSR .f_check_hero_bullets_collision    
+;     JSR .f_move_enemies    
             
     ; JSR .f_check_bullets_collision
 
@@ -283,6 +283,10 @@ skip_shoot
 draw_room_loop_1
      ; first video zone
     LDA ($FB), y
+    CMP #$00
+    BNE +
+    LDA #empty
++    
     STA $0400, y
     DEY
     BNE draw_room_loop_1
@@ -292,6 +296,10 @@ draw_room_loop_1
 draw_room_loop_2
     ; second video zone
     LDA ($FB), y
+    CMP #$00
+    BNE +
+    LDA #empty
++    
     STA $0500, y
     DEY
     BNE draw_room_loop_2
@@ -301,6 +309,10 @@ draw_room_loop_2
 draw_room_loop_3
     ; third video zone
     LDA ($FB), y
+    CMP #$00
+    BNE +
+    LDA #empty
++        
     STA $0600, y
     DEY
     BNE draw_room_loop_3
@@ -312,6 +324,10 @@ draw_room_loop_4
     CPY #$E8
     BCS draw_room_last_line
     LDA ($FB), y
+    CMP #$00
+    BNE +
+    LDA #empty
++    
     STA $0700, y
 draw_room_last_line
     DEY

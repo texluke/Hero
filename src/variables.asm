@@ -95,9 +95,9 @@ wall
 
 sprite_mask
     !byte %00000001    
-enemies_sprite_mask 
+;enemies_sprite_mask 
     !byte %00000010
-;enemies_sprite_mask     
+enemies_sprite_mask     
     !byte %00000100
     !byte %00001000
     !byte %00010000
