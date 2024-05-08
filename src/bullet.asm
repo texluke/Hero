@@ -205,7 +205,7 @@
     CPX bullet_x
     BEQ +
     INX
-    CPX bullet_x2
+    CPX bullet_x
     BEQ +
     RTS
 +    
