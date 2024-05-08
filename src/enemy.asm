@@ -44,6 +44,7 @@ get_enemies_in_room
     INY
     LDA ($FB),y
     TAX
+    ; DEX ; use zero based index (CPX #$FF)
 get_next_enemy
     CPX #$00
     BEQ enemies_positioning_completed
@@ -149,7 +150,28 @@ no_stretched
     RTS
 
 .f_move_enemies
+    // loop all enemies
+    LDX #$00
+-
+    LDA enemies, x
+    CMP #$00
+    BEQ ++
+    CMP #$FF
+    BNE +
+    LDA #$00
     RTS
++
+    STX tmp_X
+    LDA #$00
+    JSR .f_get_enemy_sprite_row_column
+    ; LDA #$05
+    ; JSR .f_put_char
+    LDX tmp_X
+
+++    
+    LDA #$05
+    JSR .f_inc_X
+    JMP -
 
 .f_get_enemy_sprite_row_column
     CLC

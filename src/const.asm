@@ -26,6 +26,11 @@ bullet_high_left_powerup = $35
 bullet_left_powerup = $36
 bullet_low_left_powerup = $37
 
+explosion_frame_1 = $38
+explosion_frame_2 = $39
+explosion_frame_3 = $3A
+exploxion_end = $3B
+
 ; bullet typws
 free_bullet = $00
 active_bullet = $01

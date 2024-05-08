@@ -71,27 +71,7 @@ bullets
     !byte $00, $00, $00, $00, $00
     !byte $00, $00, $00, $00, $00
     !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
-    !byte $00, $00, $00, $00, $00
+    !byte $00, $00, $00, $00, $00    
     !byte $FF
 
 bullet_x 
@@ -117,6 +97,7 @@ sprite_mask
     !byte %00000001    
 enemies_sprite_mask 
     !byte %00000010
+;enemies_sprite_mask     
     !byte %00000100
     !byte %00001000
     !byte %00010000
@@ -128,13 +109,16 @@ enemies_level_1
     !byte $01,      $01
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   generator,         $9C,    $50,    $00,     $01
-    !byte $02,      $00
+    !byte $02,      $00        
     !byte $03,      $00
     !byte $04,      $00         
     !byte $05,      $00    
     !byte $06,      $00    
     !byte $07,      $00            
-    !byte $08,      $00        
+    !byte $08,      $02        
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
+        !byte   reaver_inactive,   $30,    $C0,    $01,     $00   
     !byte $09,      $03
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $9C,    $C8,    $00,     $00   

@@ -10,21 +10,33 @@
     CMP #exploded_bullet
     BEQ ++
     CMP #$FF ; end of array
-    BNE +++
+    BNE ++++
     RTS
-+   ; move bulley
++   ; move bullet
     JSR .f_move_bullet 
-    JMP +++
-++  ; handle explosion
+    JMP ++++
+++  ; handle explosion    
     INX 
+    LDA bullets, x ; row
+    STA tmp_A      ; save X in A (use later to put char)
+    INX 
+    LDY bullets, x ; columns  
+    INX  
+    LDA bullets, x ; char    
+    CMP #explosion_frame_3 ; last frame
+    BEQ +++
+    INC bullets, x
     LDA bullets, x
-    INX 
-    LDY bullets, x
-    TAX
+    LDX tmp_A       ; restore row
+    JSR .f_put_char
+    JMP ++++
++++
+    LDX tmp_A      ; restore row
     LDA #$00
     JSR .f_put_char
     JSR .f_clear_bullet    
-+++        
+++++
+    ; go to next bullet        
     LDX tmp_X
     LDA #$05    
     JSR .f_inc_X    
@@ -169,8 +181,22 @@
     RTS
 
 .f_check_enemy_bullet_collision
+    ; handle special enemy collision (bounding box)
+    LDA enemy_sprite
+    CMP #generator
+    BNE +
+    JSR .f_check_generator_bullet_collision
+    RTS
++
+    ; get streached (a != 0)
+    LDA $D01D
+    LDX enemy_index
+    AND enemies_sprite_mask, x
+
     LDA enemy_index
     JSR .f_get_enemy_sprite_row_column
+    
+    ; works for sigle sprites, what about X2 sprites? double rows and columns
     ; row
     INX
     CPX bullet_x
@@ -179,10 +205,14 @@
     CPX bullet_x
     BEQ +
     INX
-    CPX bullet_x
+    CPX bullet_x2
     BEQ +
     RTS
-+
++    
+    ; right
+    CPY bullet_y
+    BEQ ++
+    INY 
     CPY bullet_y
     BEQ ++
     INY 
@@ -192,11 +222,18 @@
     CPY bullet_y
     BEQ ++
     RTS
-
 ++    
-    LDA #$38
+    LDA #explosion_frame_1
     JSR .f_put_char
+    LDA #exploded_bullet    
     LDX tmp_X
-    LDA #exploded_bullet
-    STA bullets, x    
+    STA bullets, x
+    INX
+    INX
+    INX 
+    LDA #explosion_frame_1
+    STA bullets, x
+    RTS
+
+.f_check_generator_bullet_collision
     RTS

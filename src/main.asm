@@ -179,18 +179,18 @@ no_refres_needed
 
     ; hero shoot any two cycles to reduce number of bullents on the screen
     LDX hero_shoot_wait
-    CPX #$01
+    CPX #$02
     BEQ let_shoot
     INX
     STX hero_shoot_wait
     JMP skip_shoot
 let_shoot
     LDX #$00
-    STX hero_shoot_wait
-     JSR .f_hero_shooting
+    STX hero_shoot_wait    
+    JSR .f_hero_shooting
 skip_shoot   
     
-    JSR .f_check_hero_bullets_collision
+    JSR .f_check_hero_bullets_collision    
     JSR .f_move_enemies    
             
     ; JSR .f_check_bullets_collision
