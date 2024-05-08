@@ -12,6 +12,7 @@ hunter_inactive = $0F
 hunter_left = $10
 hunter_right = $11
 generator = $12
+summoner = $13
 
 ; bullet chars
 bullet_high = $2F

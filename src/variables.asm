@@ -115,10 +115,9 @@ enemies_level_1
     !byte $05,      $00    
     !byte $06,      $00    
     !byte $07,      $00            
-    !byte $08,      $02        
+    !byte $08,      $01        
         ;       SPRITE             X       Y       MSB      STRETCHED
-        !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
-        !byte   reaver_inactive,   $30,    $C0,    $01,     $00   
+        !byte   summoner,          $80,    $70,    $00,     $01        
     !byte $09,      $03
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
