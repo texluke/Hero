@@ -147,7 +147,7 @@ move_hero_contine
 
 ; ROOM SWITCHING
 room_left
-    LDA #$44
+    LDA #$42
     STA hero_new_x
     LDA hero_new_x_msb
     ORA #$01
@@ -167,7 +167,7 @@ room_right
     INC refresh_room
     JMP +
 room_up
-    LDA #$E6
+    LDA #$E4
     STA hero_new_y
     DEC current_room
     DEC current_room
@@ -175,7 +175,7 @@ room_up
     INC refresh_room
     JMP +
 room_down
-    LDA #$32
+    LDA #$34
     STA hero_new_y
     INC current_room
     INC current_room

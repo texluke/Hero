@@ -672,4 +672,5 @@ f_check_backgroud_collision_end
 !source "src/enemy.asm"
 !source "src/hero.asm"
 !source "src/variables.asm"
+!source "src/title.asm"
 

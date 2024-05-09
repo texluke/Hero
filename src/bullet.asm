@@ -185,6 +185,8 @@
     CMP #generator
     BNE +
     JSR .f_check_generator_bullet_collision
+    RTS
++
     CMP #summoner
     BNE +
     JSR .f_check_summoner_bullet_collision
