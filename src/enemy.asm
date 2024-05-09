@@ -152,25 +152,24 @@ no_stretched
 .f_move_enemies
     // loop all enemies
     LDX #$00
+    STX enemy_index
 -
     LDA enemies, x
     CMP #$00
     BEQ ++
     CMP #$FF
-    BNE +
-    LDA #$00
+    BNE +    
     RTS
 +
     STX tmp_X
-    LDA #$00
-    JSR .f_get_enemy_sprite_row_column
-    ; LDA #$05
-    ; JSR .f_put_char
+    LDA enemy_index
+    JSR .f_get_enemy_sprite_row_column    
     LDX tmp_X
 
 ++    
     LDA #$05
     JSR .f_inc_X
+    INC enemy_index
     JMP -
 
 .f_get_enemy_sprite_row_column

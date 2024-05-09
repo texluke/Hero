@@ -19,7 +19,7 @@
 !byte $0c,$08,$b5,$07,$9e,$20,$32,$30,$36,$32,$00,$00,$00
 jmp main
 
-!set debug = $01
+!set debug = $00
 
 *=$8000
 
@@ -175,23 +175,23 @@ no_refres_needed
     ; check the better order to do that
     
     JSR .f_move_hero
-;     JSR .f_move_bullets
+    JSR .f_move_bullets
 
-;     ; hero shoot any two cycles to reduce number of bullents on the screen
-;     LDX hero_shoot_wait
-;     CPX #$02
-;     BEQ let_shoot
-;     INX
-;     STX hero_shoot_wait
-;     JMP skip_shoot
-; let_shoot
-;     LDX #$00
-;     STX hero_shoot_wait    
-;     JSR .f_hero_shooting
-; skip_shoot   
+     ; hero shoot any two cycles to reduce number of bullents on the screen
+    LDX hero_shoot_wait
+    CPX #$02
+    BEQ +
+    INX
+    STX hero_shoot_wait
+    JMP ++
++
+    LDX #$00
+    STX hero_shoot_wait    
+    JSR .f_hero_shooting
+++   
     
-;     JSR .f_check_hero_bullets_collision    
-;     JSR .f_move_enemies    
+    JSR .f_check_hero_bullets_collision    
+    JSR .f_move_enemies    
             
     ; JSR .f_check_bullets_collision
 
@@ -199,7 +199,42 @@ no_refres_needed
         LDY $d012
         CPY $d012
         BEQ *-3
-        LDA #0
+        LDA #border_color
+        STA $d020
+    }
+
+    ; set next interrupt
+    LDA #$f8
+    STA $d012
+    LDA #<.f_boder_irq
+    LDX #>.f_boder_irq
+    STA $0314
+    STX $0315
+
+    ; reset interrupt
+    ASL $d019
+
+    JMP $ea7e
+
+.f_boder_irq
+
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #1
+        STA $d020
+    }
+    
+    LDA $d011
+    AND #$77  ; set 24 rows mode
+    STA $d011 
+
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #border_color
         STA $d020
     }
 
@@ -214,31 +249,33 @@ no_refres_needed
     ; reset interrupt
     ASL $d019
 
-    JMP $ea7e
-
-.f_boder_irq
   JMP $ea7e
 
 .f_end_irq
-    JSR .f_draw_bar
+    ; JSR .f_draw_bar
 
-    ; !ifdef debug {
-    ;     LDY $d012
-    ;     CPY $d012
-    ;     BEQ *-3
-    ;     LDA #0
-    ;     STA $d020
-    ; }
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #1
+        STA $d020
+    }
+
+    LDA $d011
+    AND #$7f
+    ORA #$08  ; set 25 rows mode
+    STA $d011  
 
     jsr $1003	; play
 
-    ; !ifdef debug {
-    ;     LDY $d012
-    ;     CPY $d012
-    ;     BEQ *-3
-    ;     LDA #0
-    ;     STA $d020
-    ; }
+    !ifdef debug {
+        LDY $d012
+        CPY $d012
+        BEQ *-3
+        LDA #border_color
+        STA $d020
+    }
 
     ; set next interrupt
     LDA #$20
@@ -252,21 +289,6 @@ no_refres_needed
     ASL $d019
 
     JMP $ea7e
-
-; Functions
-.f_draw_bar
-    LDA #1
-    LDY $d012
-    CPY $d012
-    BEQ *-3
-    STA $d020
-
-    LDA #0
-    LDY $d012
-    CPY $d012
-    BEQ *-3
-    STA $d020
-    RTS
 
 .f_draw_room
     ; Print room
@@ -337,8 +359,10 @@ draw_room_last_line
 
 .f_clear
     LDA #$00
-    STA $d020
     STA $d021
+    LDA #border_color
+    STA $d020
+    
     TAX
     LDA #$00 ; empy char from hero char-set
 clrloop

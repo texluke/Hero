@@ -39,6 +39,8 @@ exploded_bullet = $02
 
 empty = $20
 
+border_color = $00
+
 
 
 
