@@ -110,7 +110,7 @@ move_hero_contine
 +
     ; LEFT
     LDA hero_new_x
-    CMP #$00
+    CMP #$0E
     BNE ++
     LDA hero_new_x_msb
     AND #$01
@@ -119,7 +119,7 @@ move_hero_contine
 ++
     ; RIGHT
     LDA hero_new_x
-    CMP #$58
+    CMP #$44
     BNE +++
     LDA hero_new_x_msb
     AND #$01
@@ -128,7 +128,7 @@ move_hero_contine
 +++
     ; UP
     LDA hero_new_y
-    CMP #$10
+    CMP #$32
     BNE ++++    
     LDA hero_moved
     AND #$08
@@ -137,7 +137,7 @@ move_hero_contine
 ++++
     ; DOWN    
     LDA hero_new_y
-    CMP #$FE
+    CMP #$E6
     BNE +
     LDA hero_moved
     AND #$04
@@ -147,7 +147,7 @@ move_hero_contine
 
 ; ROOM SWITCHING
 room_left
-    LDA #$58
+    LDA #$44
     STA hero_new_x
     LDA hero_new_x_msb
     ORA #$01
@@ -157,7 +157,7 @@ room_left
     INC refresh_room
     JMP +
 room_right
-    LDA #$00
+    LDA #$12
     STA hero_new_x
     LDA hero_new_x_msb
     AND #$FE
@@ -167,7 +167,7 @@ room_right
     INC refresh_room
     JMP +
 room_up
-    LDA #$FE
+    LDA #$E6
     STA hero_new_y
     DEC current_room
     DEC current_room
@@ -175,7 +175,7 @@ room_up
     INC refresh_room
     JMP +
 room_down
-    LDA #$10
+    LDA #$32
     STA hero_new_y
     INC current_room
     INC current_room

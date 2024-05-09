@@ -32,7 +32,7 @@
     JMP ++++
 +++
     LDX tmp_A      ; restore row
-    LDA #$00
+    LDA #empty
     JSR .f_put_char
     JSR .f_clear_bullet    
 ++++
@@ -64,7 +64,7 @@
     LDA bullets, x
     STA bullet_direction
     ; remove old bullet
-    LDA #$00
+    LDA #empty
     LDX bullet_x
     LDY bullet_y
     JSR .f_put_char
@@ -141,16 +141,15 @@
     STA bullet_direction
     
     ; loop enemies    
-    LDY #$00
-    LDA #$01
-    STA enemy_index
+    LDY #$00    
+    STY enemy_index
 -   ; check enemy    
     STY tmp_Y
     LDA enemies, y
     CMP #$FF
     BEQ +++
     CMP #$00
-    BEQ ++            
+    BEQ ++
     STA enemy_sprite
     INY
     LDA enemies, y
@@ -186,6 +185,9 @@
     CMP #generator
     BNE +
     JSR .f_check_generator_bullet_collision
+    CMP #summoner
+    BNE +
+    JSR .f_check_summoner_bullet_collision
     RTS
 +
     ; get streached (a != 0)
@@ -236,4 +238,7 @@
     RTS
 
 .f_check_generator_bullet_collision
+    RTS
+
+.f_check_summoner_bullet_collision
     RTS
