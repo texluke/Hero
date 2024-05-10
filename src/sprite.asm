@@ -251,7 +251,7 @@ irq_end
     TAX ; row
     INY
     JSR .f_get_char
-    CMP wall
+    CMP #wall
     BEQ hit
     LDA $00
     RTS
@@ -260,7 +260,7 @@ hit
     RTS
 
 .f_draw_walls
-    LDA wall
+    LDA #wall
     LDX #$10
     DEX             ; 1 byte
     STA $0400, x    ; 3 byte
@@ -548,7 +548,7 @@ row
 marker
     !byte $E0 ; dotted square
 
-wall   
+#wall   
     !byte $E6 ; square
 
 tmp 

@@ -257,7 +257,7 @@ shoot
     JSR .f_get_shooting_char
     STA tmp_A ; store shooting char    
     JSR .f_get_char
-    CMP wall
+    CMP #wall
     BEQ no_shoot
     ; choose the right char according to sprite coordinates (how?) and gun type
     ; LDA #$2F

@@ -29,26 +29,7 @@ border_width_x
 border_width_y
     !byte $32
 
-; Hero position
-; X
-hero_x
-    !byte $A0
 
-hero_x_msb
-    !byte $00
-
-hero_new_x
-    !byte $00
-
-hero_new_x_msb
-    !byte $00
-
-; Y
-hero_y
-    !byte $96
-
-hero_new_y
-    !byte $00
 
 main
     jsr $1003
@@ -102,7 +83,7 @@ main
     STA $D003
 
     ; JSR .f_get_sprite_row_column
-    ; LDA wall
+    ; LDA #wall
     ; JSR .f_put_char
 
     JSR .f_set_irq
@@ -170,6 +151,8 @@ main
     DEC refresh_room
     JSR .f_draw_room
     JSR .f_position_enemies
+    LDA enemy_activation_wait_inial_value
+    STA enemy_activation_wait
 
 no_refres_needed
     ; check the better order to do that
@@ -305,9 +288,9 @@ no_refres_needed
 draw_room_loop_1
      ; first video zone
     LDA ($FB), y
-    CMP #$00
+    CPY #$00
     BNE +
-    LDA #empty
+    TXA
 +    
     STA $0400, y
     DEY
@@ -622,19 +605,19 @@ set_row
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char
-    CMP wall
+    CMP #wall
     BEQ hit
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char
-    CMP wall
+    CMP #wall
     BEQ hit
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char
-    CMP wall
+    CMP #wall
     BEQ hit
     DEX
     DEX
@@ -643,19 +626,19 @@ check_only_current
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char
-    CMP wall
+    CMP #wall
     BEQ hit
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char
-    CMP wall
+    CMP #wall
     BEQ hit
     INX
     JSR .f_get_char
     ; LDA #01
     ; JSR .f_put_char
-    CMP wall
+    CMP #wall
     BEQ hit
     LDA #$00
     JMP f_check_backgroud_collision_end

@@ -73,13 +73,13 @@
     BEQ +
     ; bullet left
     DEY
-    jmp ++
+    JMP ++
 +
     ; bullet right
     INY
 ++
     JSR .f_get_char
-    CMP wall
+    CMP #wall
     BEQ +
     CPY #$FF
     BEQ +

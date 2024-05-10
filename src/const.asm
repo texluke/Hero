@@ -38,6 +38,7 @@ active_bullet = $01
 exploded_bullet = $02
 
 empty = $20
+wall = $29
 
 border_color = $00
 

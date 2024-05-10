@@ -22,18 +22,19 @@ reset_enemy_array
     STA enemies, x
     TXA
     CLC
-    ADC #$05 ;
+    ADC #$05
     TAX
     JMP reset_enemy_array
-reset_enemy_array_completed
-    LDA #$00
-    STA enemy_index
+reset_enemy_array_completed        
     ; use zero page accordingly to the currenet level
     LDA #<enemies_level_1
     STA $FB; Zero page
     LDA #>enemies_level_1
     STA $FC; Zero page
     LDY #$FF
+    ; initialize array index to 0
+    LDA #$00
+    STA enemy_array_index
 get_enemies_in_room
     INY
     ; ROOM
@@ -44,12 +45,15 @@ get_enemies_in_room
     INY
     LDA ($FB),y
     TAX
-    DEX ; use zero based index (CPX #$FF)
+    CPX #$00
+    BEQ skip_enemies_in_room
+    DEX ; use zero based index (CPX #$FF)                     
 get_next_enemy
     CPX #$FF
-    BEQ enemies_positioning_completed
+    BEQ enemies_positioning_completed    
+    JSR .f_get_enemy_array_index           
     JSR .f_init_enemy
-    DEX
+    DEX    
     JMP get_next_enemy
     RTS
 skip_to_next_room
@@ -69,6 +73,26 @@ skip_enemies_in_room
     JMP skip_enemies_in_room
 enemies_positioning_completed
     RTS
+
+.f_get_enemy_array_index    
+    STX tmp_X
+    STA tmp_A
+    LDA #$00
+    STA enemy_array_index
+-
+    CPX #$00
+    BNE +
+    LDA tmp_A
+    LDX tmp_X
+    RTS
++
+    DEX
+    INC enemy_array_index 
+    INC enemy_array_index 
+    INC enemy_array_index 
+    INC enemy_array_index 
+    INC enemy_array_index
+    JMP -
 
 .f_init_enemy
     ; SPRITE #
@@ -142,35 +166,163 @@ no_stretched
 
 .f_store_enemy_data
     STY tmp_Y
-    LDY enemy_index
+    LDY enemy_array_index
     STA enemies, y
     INY
-    STY enemy_index
+    STY enemy_array_index
     LDY tmp_Y
     RTS
 
 .f_move_enemies
+    // wait "enemy_activation_wait" cycles to activate enemies
+    LDX enemy_activation_wait
+    CPX #$FF
+    BEQ +
+    DEC enemy_activation_wait
++
     // loop all enemies
     LDX #$00
     STX enemy_index
 -
     LDA enemies, x
     CMP #$00
-    BEQ ++
+    BNE +
+    RTS
++    
     CMP #$FF
     BNE +    
     RTS
-+
++    
     STX tmp_X
-    LDA enemy_index
-    JSR .f_get_enemy_sprite_row_column    
-    LDX tmp_X
+    STA enemy_sprite
+    INX 
+    LDA enemies, x
+    STA enemy_x
+    INX 
+    LDA enemies, x
+    STA enemy_y
+    INX 
+    LDA enemies, x
+    STA enemy_msb
 
-++    
+    
+    LDA enemy_index
+    JSR .f_get_enemy_sprite_row_column
+    STX enemy_row
+    STY enemy_column
+    JSR .f_get_hero_sprite_row_column
+    STX hero_row
+    STY hero_column        
+
+    LDA hero_column
+    CMP enemy_column ; hero_column >= enemy_column
+    BPL move_enemy_right
+    ; move enemy left
+    JSR .f_move_enemy_left    
+    JMP +
+move_enemy_right
+    JSR .f_move_enemy_right    
+    LDA #$01    
++    
+    LDX tmp_X
     LDA #$05
     JSR .f_inc_X
     INC enemy_index
     JMP -
+
+.f_move_enemy_left
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    ; activate    
+    LDA #drone_left
+    JSR .f_activate_enemy_sprite
+    RTS
++
+    CMP #reaver_inactive
+    BNE +
+    LDA #reaver_left    
+    JSR .f_activate_enemy_sprite
+    RTS
+
++
+    ; to be rotated
+    CMP #drone_right
+    BNE +
+    LDA #drone_left
+    JSR .f_update_enemy_sprite
+    JMP ++
+
++
+    CMP #drone_left
+    BNE +++
+++
+    ; move drone    
+    LDY #$00 ; pixel to move
+    JSR .f_move_left_enemy_sprite
+    RTS
++++
+   
+
+    RTS
+
+.f_move_enemy_right
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    LDA #drone_right
+    JSR .f_activate_enemy_sprite
+    RTS    
++    
+    CMP #reaver_inactive
+    BNE +
+    LDA #reaver_right
+    JSR .f_activate_enemy_sprite
+    RTS
++
+    RTS
+
+.f_move_left_enemy_sprite
+    LDA enemy_x
+    ; subtract
+    SEC
+    SBC #$01 ; # of pixel to move enemy
+    STA tmp_A
+    LDA enemy_index
+    ASL
+    TAY
+    LDA tmp_A
+    STA $D004, y
+    LDY tmp_X
+    INY
+    STA enemies, y    
+    RTS
+
+
+.f_activate_enemy_sprite
+    LDY enemy_activation_wait
+    CPY #$FF
+    BEQ +
+    RTS  
++  
+    JSR .f_update_enemy_sprite    
+    RTS
+
+; A new sprite (use enemy_index to determinate di sprite index)
+.f_update_enemy_sprite    
+    ; update sprite
+    STA tmp_A
+    CLC
+    ADC #$80
+    STY tmp_Y
+    LDY enemy_index    
+    STA $07FA, y    
+    ; update sprite in enemy array
+    LDA tmp_A
+    LDY tmp_X    
+    STA enemies, y
+    LDY tmp_Y
+    RTS
 
 .f_get_enemy_sprite_row_column
     CLC

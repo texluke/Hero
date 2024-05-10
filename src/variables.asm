@@ -85,13 +85,10 @@ bullet_direction
 
 ; Symbols
 current_room 
-    !byte $09
+    !byte $08
 
 current_level 
     !byte $01
-
-wall 
-    !byte $29
 
 sprite_mask
     !byte %00000001    
@@ -124,6 +121,9 @@ enemies_level_1
         !byte   drone_inactive,    $30,    $60,    $01,     $00   
         !byte   reaver_inactive,   $30,    $C0,    $01,     $00   
 
+enemy_array_index
+    !byte $00
+
 enemy_index
     !byte $00
 
@@ -155,8 +155,42 @@ enemy_msb
 enemy_hits
     !byte $00
 
+enemy_row
+    !byte $00
 
-enemies_bullets
+enemy_column
+    !byte $00
+
+enemy_activation
+
+; Hero position
+; X
+hero_x
+    !byte $A0
+
+hero_x_msb
+    !byte $00
+
+hero_new_x
+    !byte $00
+
+hero_new_x_msb
+    !byte $00
+
+; Y
+hero_y
+    !byte $96
+
+hero_new_y
+    !byte $00
+
+hero_row
+    !byte $00
+hero_column
+    !byte $00
+
+hero_power_up
+    !byte $00
 
 !set level_width = $03
 !set level_heigh = $03    
@@ -164,8 +198,10 @@ enemies_bullets
 hero_shoot_wait 
     !byte $00
 
-hero_power_up
-    !byte $01
+enemy_activation_wait_inial_value
+    !byte $15
+enemy_activation_wait
+    !byte $00
 
 SCRN  = $0400
 ScreenRAMRowTableLow
