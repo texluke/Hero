@@ -92,7 +92,6 @@ current_level
 
 sprite_mask
     !byte %00000001    
-;enemies_sprite_mask 
     !byte %00000010
 enemies_sprite_mask     
     !byte %00000100
@@ -101,6 +100,17 @@ enemies_sprite_mask
     !byte %00100000
     !byte %01000000
     !byte %10000000
+
+sprite_clear_mask
+    !byte %11111110
+    !byte %11111101
+enemies_sprite_clear_mask         
+    !byte %11111011
+    !byte %11110111
+    !byte %11101111
+    !byte %11011111
+    !byte %10111111
+    !byte %01111111
 
 enemies_level_1    
     !byte $01,      $01
@@ -112,9 +122,9 @@ enemies_level_1
     !byte $05,      $00    
     !byte $06,      $00    
     !byte $07,      $00            
-    !byte $08,      $01        
+    !byte $08,      $00       
         ;       SPRITE             X       Y       MSB      STRETCHED
-        !byte   summoner,          $80,    $70,    $00,     $01        
+        ; !byte   summoner,          $80,    $70,    $00,     $01        
     !byte $09,      $03
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
@@ -199,8 +209,13 @@ hero_shoot_wait
     !byte $00
 
 enemy_activation_wait_inial_value
-    !byte $15
+    !byte $20
 enemy_activation_wait
+    !byte $00
+
+drone_move_wait_inital_value
+    !byte $02
+drone_move_wait
     !byte $00
 
 SCRN  = $0400

@@ -180,18 +180,20 @@ no_stretched
     BEQ +
     DEC enemy_activation_wait
 +
+    LDX drone_move_wait
+    CPX #$FF
+    BEQ +
+    DEC drone_move_wait  
++
     // loop all enemies
     LDX #$00
     STX enemy_index
 -
     LDA enemies, x
     CMP #$00
-    BNE +
-    RTS
-+    
+    BEQ move_enemy_end    
     CMP #$FF
-    BNE +    
-    RTS
+    BEQ move_enemy_end
 +    
     STX tmp_X
     STA enemy_sprite
@@ -204,7 +206,6 @@ no_stretched
     INX 
     LDA enemies, x
     STA enemy_msb
-
     
     LDA enemy_index
     JSR .f_get_enemy_sprite_row_column
@@ -214,6 +215,8 @@ no_stretched
     STX hero_row
     STY hero_column        
 
+    ; LEFT / RIGHT
+    ; try to avoid bounce
     LDA hero_column
     CMP enemy_column ; hero_column >= enemy_column
     BPL move_enemy_right
@@ -221,14 +224,37 @@ no_stretched
     JSR .f_move_enemy_left    
     JMP +
 move_enemy_right
-    JSR .f_move_enemy_right    
-    LDA #$01    
+    ; move enemy right
+    JSR .f_move_enemy_right            
++
+    ; UP / DOWN
+    LDA hero_row
+    CMP enemy_row
+    BPL move_enemy_up ; hero_row >= enemy_rot
+    ; move enemy down
+    JSR .f_move_enemy_up
+    JMP +
+move_enemy_up
+    JSR .f_move_enemy_down
+    ; move enemy up
 +    
     LDX tmp_X
     LDA #$05
     JSR .f_inc_X
     INC enemy_index
     JMP -
+
+move_enemy_end;
+    ; drone can
+    LDX drone_move_wait
+    CPX #$FF
+    BEQ +
+    RTS
++    
+    LDX drone_move_wait_inital_value
+    STX drone_move_wait
+    RTS
+
 
 .f_move_enemy_left
     LDA enemy_sprite
@@ -246,24 +272,40 @@ move_enemy_right
     RTS
 
 +
+    ; DRONE
     ; to be rotated
     CMP #drone_right
     BNE +
     LDA #drone_left
     JSR .f_update_enemy_sprite
     JMP ++
-
 +
     CMP #drone_left
     BNE +++
 ++
-    ; move drone    
-    LDY #$00 ; pixel to move
+    ; move drone
+    LDA drone_move_wait
+    CMP #$00
+    BEQ +
+    RTS
++   
     JSR .f_move_left_enemy_sprite
     RTS
-+++
-   
-
++++ 
+    ; REAVER
+    ; to be rotated
+    CMP #reaver_right
+    BNE +
+    LDA #reaver_left
+    JSR .f_update_enemy_sprite
+    JMP ++
++
+    CMP #reaver_left
+    BNE +++
+++
+    ; move reaver
+    JSR .f_move_left_enemy_sprite
++++    
     RTS
 
 .f_move_enemy_right
@@ -280,24 +322,214 @@ move_enemy_right
     JSR .f_activate_enemy_sprite
     RTS
 +
+    ; to be rotated
+    CMP #drone_left
+    BNE +
+    LDA #drone_right
+    JSR .f_update_enemy_sprite
+    JMP ++
+
++
+    CMP #drone_right
+    BNE +++
+++
+    ; move drone    
+    LDA drone_move_wait
+    CMP #$FF
+    BEQ +
+    RTS
++
+    JSR .f_move_right_enemy_sprite
+    RTS    
++++
+    ; REAVER
+    ; to be rotated
+    CMP #reaver_left
+    BNE +
+    LDA #reaver_right
+    JSR .f_update_enemy_sprite
+    JMP ++
++
+    CMP #reaver_right
+    BNE +++
+++
+    ; move reaver
+    JSR .f_move_right_enemy_sprite
++++    
+
+    RTS
+
+.f_move_enemy_down
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    RTS
++
+    CMP #reaver_inactive
+    BNE +
+    RTS
++
+    CMP #drone_left
+    BEQ ++
+    CMP #drone_right 
+    BNE +++    
+++
+    LDA drone_move_wait
+    CMP #$FF
+    BEQ +
+    RTS
++
+    JSR .f_move_down_enemy_sprite
+    RTS
++++
+    JSR .f_move_down_enemy_sprite
+    ; check next enemy type
+    RTS
+
+.f_move_enemy_up
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    RTS
++
+    CMP #reaver_inactive
+    BNE +
+    RTS
++
+    CMP #drone_left
+    BEQ ++
+    CMP #drone_right 
+    BNE +++    
+++
+    LDA drone_move_wait
+    CMP #$FF
+    BEQ +
+    RTS
++
+    JSR .f_move_up_enemy_sprite
+    RTS
++++
+    JSR .f_move_up_enemy_sprite
+    ; check next enemy type
     RTS
 
 .f_move_left_enemy_sprite
+    STA tmp_A
+    LDA enemy_index    
+    TAY
     LDA enemy_x
     ; subtract
     SEC
-    SBC #$01 ; # of pixel to move enemy
-    STA tmp_A
+    SBC #$01 ; # of pixel to move enemy      
+    STA enemy_x      
+    BCS +
+    ; update msb
+    STA tmp    
+    LDA $D010    
+    AND enemies_sprite_clear_mask, y
+    STA $D010
+    LDA #$00
+    STA enemy_msb
+    LDA tmp    
++
+    ; calculate sprite registry offset
     LDA enemy_index
     ASL
     TAY
-    LDA tmp_A
+    LDA enemy_x
+    ; store new position
     STA $D004, y
+
+    ; update enemies array
     LDY tmp_X
     INY
     STA enemies, y    
+    LDA tmp_A
     RTS
 
+.f_move_right_enemy_sprite
+    STA tmp_A
+    LDA enemy_index    
+    TAY
+    LDA enemy_x    
+    CLC
+    ADC #$01 ; # of pixel to move enemy                
+    BCC +   
+    ; update msb
+    STA enemy_x
+    STA tmp
+    LDA $D010
+    ORA enemies_sprite_mask, y
+    STA $D010
+    LDA #$00
+    STA enemy_msb
+    LDA tmp    
++
+    ; calculate sprite registry offset
+    STA enemy_x
+    LDA enemy_index
+    ASL
+    TAY
+    LDA enemy_x
+    ; store new position
+    STA $D004, y
+
+    ; update enemies array
+    LDY tmp_X
+    INY
+    STA enemies, y    
+    LDA tmp_A
+    RTS
+
+.f_move_down_enemy_sprite
+    STA tmp_A
+    LDA enemy_index    
+    TAY
+    LDA enemy_y    
+    CLC
+    ADC #$01 
+    STA enemy_y
+
+    LDA enemy_index
+    ASL
+    TAY
+    LDA enemy_y
+    ; store new position
+    STA $D005, y
+
+    ; update enemies array
+    LDY tmp_X
+    INY
+    INY
+    STA enemies, y    
+
+    LDA tmp_A
+    RTS
+
+.f_move_up_enemy_sprite
+    STA tmp_A
+    LDA enemy_index    
+    TAY
+    LDA enemy_y    
+    SEC
+    SBC #$01
+    STA enemy_y
+
+    LDA enemy_index
+    ASL
+    TAY
+    LDA enemy_y
+    ; store new position
+    STA $D005, y
+
+    ; update enemies array
+    LDY tmp_X
+    INY
+    INY
+    STA enemies, y    
+
+    LDA tmp_A
+    RTS
 
 .f_activate_enemy_sprite
     LDY enemy_activation_wait
