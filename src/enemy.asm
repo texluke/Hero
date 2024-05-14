@@ -154,14 +154,14 @@ no_stretched
     JSR .f_store_enemy_data
 
     ; Print sprite index
-    STX tmp_X
-    STY tmp_Y
-    TXA
-    JSR .f_get_enemy_sprite_row_column
-    LDA tmp_X
-    JSR .f_put_char
-    LDX tmp_X
-    LDY tmp_Y
+    ; STX tmp_X
+    ; STY tmp_Y
+    ; TXA
+    ; JSR .f_get_enemy_sprite_row_column
+    ; LDA tmp_X
+    ; JSR .f_put_char
+    ; LDX tmp_X
+    ; LDY tmp_Y
     RTS
 
 .f_store_enemy_data
@@ -207,38 +207,19 @@ no_stretched
     LDA enemies, x
     STA enemy_msb
     
+    ; get enemy row and column
     LDA enemy_index
-    JSR .f_get_enemy_sprite_row_column
+    JSR .f_get_enemy_sprite_row_column 
     STX enemy_row
-    STY enemy_column
+    STY enemy_column   
+    ; get hero row and column
     JSR .f_get_hero_sprite_row_column
     STX hero_row
-    STY hero_column        
+    STY hero_column
+    
+    JSR .f_move_enemy_left_right
+    JSR .f_move_enemy_up_down
 
-    ; LEFT / RIGHT
-    ; try to avoid bounce
-    LDA hero_column
-    CMP enemy_column ; hero_column >= enemy_column
-    BEQ +
-    BPL move_enemy_right
-    ; move enemy left    
-    JSR .f_move_enemy_left    
-    JMP +
-move_enemy_right
-    ; move enemy right
-    JSR .f_move_enemy_right            
-+
-    ; UP / DOWN
-    LDA hero_row
-    CMP enemy_row
-    BEQ +
-    BPL move_enemy_up ; hero_row >= enemy_rot    
-    ; move enemy down
-    JSR .f_move_enemy_up
-    JMP +
-move_enemy_up
-    JSR .f_move_enemy_down
-    ; move enemy up
 +    
     LDX tmp_X
     LDA #$05
@@ -257,6 +238,49 @@ move_enemy_end;
     STX drone_move_wait
     RTS
 
+.f_move_enemy_left_right
+    ; LEFT / RIGHT
+    ; try to avoid bounce
+    LDA hero_column
+    CMP enemy_column ; hero_column >= enemy_column
+    BEQ + ; skip equal
+    BPL move_enemy_right
+    ; move enemy left    
+    JSR .f_move_enemy_left    
+    JMP +
+move_enemy_right
+    ; move enemy right
+    JSR .f_move_enemy_right  
++
+    RTS
+
+.f_move_enemy_up_down
+    ; UP / DOWN
+    LDA hero_row
+    CMP enemy_row
+    BEQ + ; skip equal
+    BPL move_enemy_up ; hero_row >= enemy_rot    
+    ; move enemy down
+    LDX enemy_row
+    LDY enemy_column
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    INY 
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    INY 
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    JSR .f_move_enemy_up
+    JMP +
+move_enemy_up
+    ; move enemy up
+    JSR .f_move_enemy_down 
++
+    RTS
 
 .f_move_enemy_left
     LDA enemy_sprite
