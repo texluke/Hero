@@ -219,8 +219,9 @@ no_stretched
     ; try to avoid bounce
     LDA hero_column
     CMP enemy_column ; hero_column >= enemy_column
+    BEQ +
     BPL move_enemy_right
-    ; move enemy left
+    ; move enemy left    
     JSR .f_move_enemy_left    
     JMP +
 move_enemy_right
@@ -230,7 +231,8 @@ move_enemy_right
     ; UP / DOWN
     LDA hero_row
     CMP enemy_row
-    BPL move_enemy_up ; hero_row >= enemy_rot
+    BEQ +
+    BPL move_enemy_up ; hero_row >= enemy_rot    
     ; move enemy down
     JSR .f_move_enemy_up
     JMP +
