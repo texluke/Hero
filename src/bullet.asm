@@ -81,6 +81,10 @@
     JSR .f_get_char
     CMP #wall
     BEQ +
+    CMP #barrier
+    BEQ +
+    CMP #powerup
+    BEQ +
     CPY #$FF
     BEQ +
     CPY #$27

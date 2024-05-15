@@ -32,13 +32,18 @@ explosion_frame_2 = $39
 explosion_frame_3 = $3A
 exploxion_end = $3B
 
-; bullet typws
+; bullet types
 free_bullet = $00
 active_bullet = $01
 exploded_bullet = $02
 
+; level 
 empty = $20
 wall = $29
+
+; level customization
+powerup = $3C
+barrier = $3D
 
 border_color = $00
 

@@ -150,6 +150,7 @@ main
     BEQ no_refres_needed
     DEC refresh_room
     JSR .f_draw_room
+    JSR .f_customize_room
     JSR .f_position_enemies
     LDA enemy_activation_wait_inial_value
     STA enemy_activation_wait
@@ -340,6 +341,47 @@ draw_room_last_line
 
     RTS
 
+.f_customize_room
+    LDA current_level
+    CMP #$01
+    BNE +
+    JSR .f_customer_room_level_1    
++
+    RTS
+
+.f_customer_room_level_1
+    LDA current_room
+    CMP #06
+    BNE +
+    ; add power up
+    LDA hero_powerup
+    CMP #$01
+    BEQ +++    
+    LDX #$09 ; row
+    LDY #$12 ; column
+    LDA #powerup
+    JSR .f_put_char
+    JMP +++
++   ; next room  
+    CMP #$05
+    BNE +
+    LDA barrier_opened
+    CMP #$01
+    BEQ +++
+    LDA #barrier
+    LDX #$0C ; row
+    LDY #$11 ; column
+    JSR .f_put_char    
+    INX    
+    JSR .f_put_char
+    INX        
+    JSR .f_put_char
+    INX        
+    JSR .f_put_char
++   ; next room
++++ ; end
+    RTS
+
 .f_clear
     LDA #$00
     STA $d021
@@ -430,7 +472,7 @@ get_shooting_char_end
     RTS
 
 .f_get_shooting_char_high
-    LDA hero_power_up
+    LDA hero_powerup
     CMP #$01
     BEQ +
     LDA #bullet_high
@@ -446,7 +488,7 @@ get_shooting_char_end
     RTS
 
 .f_get_shooting_char_middle
-    LDA hero_power_up
+    LDA hero_powerup
     CMP #$01
     BEQ +
     LDA #bullet
@@ -462,7 +504,7 @@ get_shooting_char_end
     RTS
 
 .f_get_shooting_char_low
-    LDA hero_power_up
+    LDA hero_powerup
     CMP #$01
     BEQ +
     LDA #bullet_low
@@ -602,49 +644,77 @@ set_row
     ; and now check for collision
     CPY #$27
     BEQ check_only_current ; check last column (39)
-    JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    
+    JSR .f_get_char    
     CMP #wall
     BEQ hit
+    CMP #powerup
+    BEQ set_powerup
+    CMP #barrier
+    BEQ barrier_hit            
+
     INX
-    JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    JSR .f_get_char    
     CMP #wall
     BEQ hit
+    CMP #powerup
+    BEQ set_powerup
+    CMP #barrier
+    BEQ barrier_hit
+
     INX
-    JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    JSR .f_get_char    
     CMP #wall
     BEQ hit
+    CMP #powerup
+    BEQ set_powerup
+    CMP #barrier
+    BEQ barrier_hit
+
     DEX
     DEX
     INY
 check_only_current
-    JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    JSR .f_get_char    
     CMP #wall
     BEQ hit
+    CMP #powerup
+    BEQ set_powerup
+    CMP #barrier
+    BEQ barrier_hit
+
     INX
-    JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    JSR .f_get_char    
     CMP #wall
     BEQ hit
+    CMP #powerup
+    BEQ set_powerup
+    CMP #barrier
+    BEQ barrier_hit
+
     INX
-    JSR .f_get_char
-    ; LDA #01
-    ; JSR .f_put_char
+    JSR .f_get_char    
     CMP #wall
     BEQ hit
+    CMP #powerup
+    BEQ set_powerup
+    CMP #barrier
+    BEQ barrier_hit
+    ; no collision
     LDA #$00
     JMP f_check_backgroud_collision_end
 hit
     LDA #01
-    ; JSR .f_put_char
+    JMP f_check_backgroud_collision_end
+set_powerup
+    LDA #20
+    JSR .f_put_char
+    INC hero_powerup
+    LDA #00 ; no collision
+    JMP f_check_backgroud_collision_end
+barrier_hit
+    LDA #01
+    JMP f_check_backgroud_collision_end
 f_check_backgroud_collision_end
     RTS
 

@@ -13,19 +13,27 @@ tmp_X
 tmp_Y
     !byte $00
 
-button_pressed   
-    !byte $00
+; Room
+current_room 
+    !byte $08
 
 refresh_room  ; set to $01 if screen need to be refreshed
     !byte $01
 
+barrier_opened
+    !byte $00
+
+genertor_destroyed
+    !byte $00
+
+; joystick variables
 dx 
     !byte $00
 dy 
-    !byte $01
+    !byte $00
 
-; !byte   $0A,    $80,    $00,    $80
-; !byte   $08,    $80,    $00,    $A0
+button_pressed   
+    !byte $00
 
 hero_facing
     !byte $01 ; right
@@ -35,7 +43,6 @@ hero_facing_switched
 
 hero_moved
     !byte $00
-
 
 no_smokes
     !byte $02
@@ -84,9 +91,6 @@ bullet_direction
     !byte $00
 
 ; Symbols
-current_room 
-    !byte $08
-
 current_level 
     !byte $01
 
@@ -115,16 +119,32 @@ enemies_sprite_clear_mask
 enemies_level_1    
     !byte $01,      $01
         ;       SPRITE             X       Y       MSB      STRETCHED
-        !byte   generator,         $9C,    $50,    $00,     $01
-    !byte $02,      $00        
-    !byte $03,      $00
-    !byte $04,      $00         
-    !byte $05,      $00    
-    !byte $06,      $00    
-    !byte $07,      $00            
-    !byte $08,      $00       
+        !byte   generator,         $40,    $6C,    $00,     $01
+    !byte $02,      $02               
         ;       SPRITE             X       Y       MSB      STRETCHED
-        ; !byte   summoner,          $80,    $70,    $00,     $01        
+        !byte   reaver_inactive,   $3A,    $8A,    $00,     $00            
+        !byte   hunter_inactive,   $A4,    $80,    $00,     $00                    
+    !byte $03,      $02        
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   drone_inactive,    $00,    $62,    $01,     $00   
+        !byte   summoner,          $E0,    $80,    $00,     $01
+    !byte $04,      $03
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   drone_inactive,    $9A,    $7A,    $00,     $00   
+        !byte   drone_inactive,    $3A,    $62,    $01,     $00   
+        !byte   reaver_inactive,   $20,    $BC,    $00,     $00            
+    !byte $05,      $02    
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   drone_inactive,    $EA,    $88,    $00,     $00   
+        !byte   crusher_inactive,  $3A,    $5A,    $01,     $00   
+    !byte $06,      $00    
+    !byte $07,      $03
+        ;       SPRITE             X       Y       MSB      STRETCHED
+        !byte   drone_inactive,    $20,    $C6,    $00,     $00   
+        !byte   drone_inactive,    $9C,    $BC,    $00,     $00
+        !byte   drone_inactive,    $20,    $3A,    $00,     $00
+    !byte $08,      $00
+        ; STARTING ROOM NO ENEMIS                   
     !byte $09,      $03
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
@@ -199,7 +219,7 @@ hero_row
 hero_column
     !byte $00
 
-hero_power_up
+hero_powerup
     !byte $00
 
 !set level_width = $03
