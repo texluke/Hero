@@ -13,6 +13,11 @@ hunter_left = $10
 hunter_right = $11
 generator = $12
 summoner = $13
+sprite_exposion_frame_1 = $18
+sprite_exposion_frame_2 = $19
+sprite_exposion_frame_3 = $1A
+sprite_enemy_killed = $1B
+
 
 ; bullet chars
 bullet_high = $2F
@@ -27,6 +32,7 @@ bullet_high_left_powerup = $35
 bullet_left_powerup = $36
 bullet_low_left_powerup = $37
 
+; explosion char
 explosion_frame_1 = $38
 explosion_frame_2 = $39
 explosion_frame_3 = $3A

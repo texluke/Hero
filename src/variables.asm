@@ -21,14 +21,14 @@ refresh_room  ; set to $01 if screen need to be refreshed
     !byte $01
 
 barrier_opened
-    !byte $00
+    !byte $01
 
 genertor_destroyed
     !byte $00
 
 ; joystick variables
 dx 
-    !byte $00
+    !byte $0046
 dy 
     !byte $00
 
@@ -145,11 +145,11 @@ enemies_level_1
         !byte   drone_inactive,    $20,    $3A,    $00,     $00
     !byte $08,      $00
         ; STARTING ROOM NO ENEMIS                   
-    !byte $09,      $03
+    !byte $09,      $01
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $9C,    $C8,    $00,     $00   
-        !byte   drone_inactive,    $30,    $60,    $01,     $00   
-        !byte   reaver_inactive,   $30,    $C0,    $01,     $00   
+        ; !byte   drone_inactive,    $30,    $60,    $01,     $00   
+        ; !byte   reaver_inactive,   $30,    $C0,    $01,     $00   
 
 enemy_array_index
     !byte $00

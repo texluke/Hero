@@ -153,7 +153,16 @@
     CMP #$FF
     BEQ +++
     CMP #$00
+    BEQ +++
+    CMP #sprite_exposion_frame_1
     BEQ ++
+    CMP #sprite_exposion_frame_1
+    BEQ ++
+    CMP #sprite_exposion_frame_1
+    BEQ ++
+    CMP #sprite_enemy_killed
+    BEQ ++
+
     STA enemy_sprite
     INY
     LDA enemies, y
@@ -170,7 +179,7 @@
     JSR .f_check_enemy_bullet_collision    
 
 ++
-    LDY tmp_Y
+    LDY tmp_Y ; <-- start of enememies matrix line
     LDA #$05
     JSR .f_inc_Y
     INC enemy_index
@@ -195,12 +204,7 @@
     BNE +
     JSR .f_check_summoner_bullet_collision
     RTS
-+
-    ; get streached (a != 0)
-    LDA $D01D
-    LDX enemy_index
-    AND enemies_sprite_mask, x
-
++    
     LDA enemy_index
     JSR .f_get_enemy_sprite_row_column
     
@@ -231,6 +235,37 @@
     BEQ ++
     RTS
 ++    
+    ; Hit    
+    LDA enemy_hits    
+    LDX hero_powerup
+    CPX #$01
+    BEQ +
+    SEC         
+    SBC #$01
+   JMP ++
++
+    SEC
+    SBC #02
+++
+    STA enemy_hits
+    CMP #$00
+    BNE +    
+    
+    ; enemy killed, show explosion
+    LDX bullet_x
+    LDY bullet_y
+    LDA #empty
+    JSR .f_put_char
+    JSR .f_clear_bullet
+    LDY tmp_Y
+    STY enemy_array_index     
+    LDA #sprite_exposion_frame_1
+    JSR .f_update_enemy_sprite
+    JMP ++ ; update remaining hits to zero      
++        
+    ; enemy hit, show impact explosion
+    LDX bullet_x
+    LDY bullet_y
     LDA #explosion_frame_1
     JSR .f_put_char
     LDA #exploded_bullet    
@@ -241,6 +276,16 @@
     INX 
     LDA #explosion_frame_1
     STA bullets, x
+
+    ; save new hits point
+++
+    LDY tmp_Y
+    INY 
+    INY
+    INY
+    INY
+    LDA enemy_hits
+    STA enemies, y
     RTS
 
 .f_check_generator_bullet_collision

@@ -150,13 +150,12 @@ no_stretched
     ORA enemies_sprite_mask, x
     STA $D015
     ; Enemy hits
-    LDA #$10
+    LDA #$06
     JSR .f_store_enemy_data
 
     ; Print sprite index
     ; STX tmp_X
     ; STY tmp_Y
-    ; TXA
     ; JSR .f_get_enemy_sprite_row_column
     ; LDA tmp_X
     ; JSR .f_put_char
@@ -189,12 +188,13 @@ no_stretched
     LDX #$00
     STX enemy_index
 -
+    STX enemy_array_index ; <-- start of enemy array 
     LDA enemies, x
     CMP #$00
     BEQ move_enemy_end    
     CMP #$FF
     BEQ move_enemy_end
-+    
+   
     STX tmp_X
     STA enemy_sprite
     INX 
@@ -206,7 +206,26 @@ no_stretched
     INX 
     LDA enemies, x
     STA enemy_msb
-    
+
+    LDA enemy_sprite
+    CMP #sprite_exposion_frame_1
+    BNE +
+    JSR .f_exposion_animation
+    JMP ++
++    
+    CMP #sprite_exposion_frame_2
+    BNE +
+    JSR .f_exposion_animation
+    JMP ++
++    
+    CMP #sprite_exposion_frame_3
+    BNE +
+    JSR .f_exposion_animation
+    JMP ++
++
+    CMP #sprite_enemy_killed
+    BEQ ++
+
     ; get enemy row and column
     LDA enemy_index
     JSR .f_get_enemy_sprite_row_column 
@@ -220,7 +239,8 @@ no_stretched
     JSR .f_move_enemy_left_right
     JSR .f_move_enemy_up_down
 
-+    
+++    
+    ; next enemy
     LDX tmp_X
     LDA #$05
     JSR .f_inc_X
@@ -567,23 +587,46 @@ move_enemy_up
     RTS
 
 ; A new sprite (use enemy_index to determinate di sprite index)
+; tmp_X start of enemy array
 .f_update_enemy_sprite    
     ; update sprite
     STA tmp_A
     CLC
-    ADC #$80
-    STY tmp_Y
-    LDY enemy_index    
-    STA $07FA, y    
+    ADC #$80    
+    LDX enemy_index    
+    STA $07FA, x
     ; update sprite in enemy array
     LDA tmp_A
-    LDY tmp_X    
-    STA enemies, y
-    LDY tmp_Y
+    LDX enemy_array_index    
+    STA enemies, x
+    LDx tmp_X
     RTS
 
 .f_get_enemy_sprite_row_column
     CLC
     ADC #$02
     JSR .f_get_sprite_row_column
+    RTS
+
+.f_exposion_animation
+       
+    LDY enemy_sprite
+    INY 
+    TYA ; new explosion frame
+    CMP #sprite_enemy_killed
+    BNE +
+    STA tmp_A
+    LDY enemy_index
+    LDA $D015
+    AND enemies_sprite_clear_mask, y
+    STA $D015
+    LDA tmp_A
+    JMP ++
++
+    ; update sprite and return
+    JSR .f_update_enemy_sprite    
+++    
+    LDX tmp_X
+    STA enemies, x
+    LDY tmp_Y
     RTS
