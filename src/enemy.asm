@@ -150,7 +150,7 @@ no_stretched
     ORA enemies_sprite_mask, x
     STA $D015
     ; Enemy hits
-    LDA #$06
+    LDA #$40
     JSR .f_store_enemy_data
 
     ; Print sprite index
@@ -225,7 +225,11 @@ no_stretched
 +
     CMP #sprite_enemy_killed
     BEQ ++
-
+    CMP #generator
+    BEQ ++
+    CMP #summoner
+    BEQ ++
+    
     ; get enemy row and column
     LDA enemy_index
     JSR .f_get_enemy_sprite_row_column 
@@ -587,7 +591,7 @@ move_enemy_up
     RTS
 
 ; A new sprite (use enemy_index to determinate di sprite index)
-; tmp_X start of enemy array
+; enemy_array_index start of enemy array row
 .f_update_enemy_sprite    
     ; update sprite
     STA tmp_A

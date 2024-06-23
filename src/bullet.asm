@@ -193,48 +193,33 @@
     RTS
 
 .f_check_enemy_bullet_collision
-    ; handle special enemy collision (bounding box)
+    
+    LDA enemy_index
+    JSR .f_get_enemy_sprite_row_column
+
+    ; handle special enemy collision (bounding box)    
     LDA enemy_sprite
     CMP #generator
     BNE +
     JSR .f_check_generator_bullet_collision
+    CMP #$01
+    BEQ ++
     RTS
 +
     CMP #summoner
     BNE +
     JSR .f_check_summoner_bullet_collision
+    CMP #$01
+    BEQ ++
     RTS
 +    
-    LDA enemy_index
-    JSR .f_get_enemy_sprite_row_column
-    
-    ; works for sigle sprites, what about X2 sprites? double rows and columns
-    ; row
-    INX
-    CPX bullet_x
-    BEQ +
-    INX
-    CPX bullet_x
-    BEQ +
-    INX
-    CPX bullet_x
-    BEQ +
-    RTS
-+    
-    ; right
-    CPY bullet_y
-    BEQ ++
-    INY 
-    CPY bullet_y
-    BEQ ++
-    INY 
-    CPY bullet_y
-    BEQ ++
-    INY 
-    CPY bullet_y
+
+    JSR .f_check_generic_enemy_bullet_collision
+    CMP #$01
     BEQ ++
     RTS
-++    
+   
+++
     ; Hit    
     LDA enemy_hits    
     LDX hero_powerup
@@ -288,7 +273,120 @@
     STA enemies, y
     RTS
 
-.f_check_generator_bullet_collision
+.f_check_generic_enemy_bullet_collision
+
+    LDA #$00 ; no hit
+    ; row
+    INX
+    CPX bullet_x
+    BEQ +
+    INX
+    CPX bullet_x
+    BEQ +
+    INX
+    CPX bullet_x
+    BEQ +
+    RTS
++    
+    ; right
+    CPY bullet_y
+    BEQ ++
+    INY 
+    CPY bullet_y
+    BEQ ++
+    INY 
+    CPY bullet_y
+    BEQ ++
+    INY 
+    CPY bullet_y
+    BEQ ++
+    RTS
+++
+    LDA #$01 ; hit
+    RTS
+
+initial_x
+    !byte $00
+initial_y
+    !byte $00
+
+enemy_initial_x
+    !byte $00
+enemy_initial_y
+    !byte $01
+
+.f_check_generator_bullet_collision    
+    
+    LDA #$00 ; no hit
+    
+    INY    
+    ; LDA #wall
+    ; JSR .f_put_char 
+
+        
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    DEY
+    INX 
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    DEY
+    INX
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    INY
+    INX
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    INX
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    INY
+    INX
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    ; right side
+    INY
+    INY
+    INY
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+
+    ; DEY
+    ; INX
+    ; CPX bullet_x
+    ; BEQ +
+    ; CPY bullet_y
+    ; BEQ ++
+
+    RTS
+++
+    ; LDA #wall
+    ; JSR .f_put_char 
+
+    LDA #$01
+
     RTS
 
 .f_check_summoner_bullet_collision
