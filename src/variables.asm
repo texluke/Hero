@@ -116,10 +116,11 @@ enemies_sprite_clear_mask
     !byte %10111111
     !byte %01111111
 
+; 3F
 enemies_level_1    
     !byte $01,      $01
         ;       SPRITE             X       Y       MSB      STRETCHED
-        !byte   generator,         $C0,    $6C,    $00,     $01
+        !byte   generator,         $BF,    $67,    $00,     $01
     !byte $02,      $02               
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   reaver_inactive,   $3A,    $8A,    $00,     $00            

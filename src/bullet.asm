@@ -13,16 +13,16 @@
     BNE ++++
     RTS
 +   ; move bullet
-    JSR .f_move_bullet 
+    JSR .f_move_bullet
     JMP ++++
-++  ; handle explosion    
-    INX 
+++  ; handle explosion
+    INX
     LDA bullets, x ; row
     STA tmp_A      ; save X in A (use later to put char)
-    INX 
-    LDY bullets, x ; columns  
-    INX  
-    LDA bullets, x ; char    
+    INX
+    LDY bullets, x ; columns
+    INX
+    LDA bullets, x ; char
     CMP #explosion_frame_3 ; last frame
     BEQ +++
     INC bullets, x
@@ -34,12 +34,12 @@
     LDX tmp_A      ; restore row
     LDA #empty
     JSR .f_put_char
-    JSR .f_clear_bullet    
+    JSR .f_clear_bullet
 ++++
-    ; go to next bullet        
+    ; go to next bullet
     LDX tmp_X
-    LDA #$05    
-    JSR .f_inc_X    
+    LDA #$05
+    JSR .f_inc_X
     JMP -
     RTS
 
@@ -116,13 +116,13 @@
     INX
     STA bullets, x
     INX
-    STA bullets, x    
+    STA bullets, x
     RTS
 
 .f_check_hero_bullets_collision
     LDX #$00
 --
-    STX tmp_X 
+    STX tmp_X
     LDA bullets, x
     CMP #$01
     BEQ +
@@ -143,11 +143,11 @@
     INX ; direction (need to bouce back the enemy)
     LDA bullets, x
     STA bullet_direction
-    
-    ; loop enemies    
-    LDY #$00    
+
+    ; loop enemies
+    LDY #$00
     STY enemy_index
--   ; check enemy    
+-   ; check enemy
     STY tmp_Y
     LDA enemies, y
     CMP #$FF
@@ -156,9 +156,9 @@
     BEQ +++
     CMP #sprite_exposion_frame_1
     BEQ ++
-    CMP #sprite_exposion_frame_1
+    CMP #sprite_exposion_frame_2
     BEQ ++
-    CMP #sprite_exposion_frame_1
+    CMP #sprite_exposion_frame_3
     BEQ ++
     CMP #sprite_enemy_killed
     BEQ ++
@@ -176,7 +176,7 @@
     INY
     LDA enemies, y
     STA enemy_hits
-    JSR .f_check_enemy_bullet_collision    
+    JSR .f_check_enemy_bullet_collision
 
 ++
     LDY tmp_Y ; <-- start of enememies matrix line
@@ -184,20 +184,20 @@
     JSR .f_inc_Y
     INC enemy_index
     JMP -
-    
+
 +++ ; next bullet
     LDX tmp_X
-    LDA #$05    
-    JSR .f_inc_X    
+    LDA #$05
+    JSR .f_inc_X
     JMP --
     RTS
 
 .f_check_enemy_bullet_collision
-    
+
     LDA enemy_index
     JSR .f_get_enemy_sprite_row_column
 
-    ; handle special enemy collision (bounding box)    
+    ; handle special enemy collision (bounding box)
     LDA enemy_sprite
     CMP #generator
     BNE +
@@ -212,30 +212,30 @@
     CMP #$01
     BEQ ++
     RTS
-+    
++
 
     JSR .f_check_generic_enemy_bullet_collision
     CMP #$01
     BEQ ++
     RTS
-   
+
 ++
-    ; Hit    
-    LDA enemy_hits    
+    ; Hit
+    LDA enemy_hits
     LDX hero_powerup
     CPX #$01
     BEQ +
-    SEC         
+    SEC
     SBC #$01
-   JMP ++
+    JMP ++
 +
     SEC
     SBC #02
 ++
     STA enemy_hits
     CMP #$00
-    BNE +    
-    
+    BNE +
+
     ; enemy killed, show explosion
     LDX bullet_x
     LDY bullet_y
@@ -243,29 +243,29 @@
     JSR .f_put_char
     JSR .f_clear_bullet
     LDY tmp_Y
-    STY enemy_array_index     
+    STY enemy_array_index
     LDA #sprite_exposion_frame_1
     JSR .f_update_enemy_sprite
-    JMP ++ ; update remaining hits to zero      
-+        
+    JMP ++ ; update remaining hits to zero
++
     ; enemy hit, show impact explosion
     LDX bullet_x
     LDY bullet_y
     LDA #explosion_frame_1
     JSR .f_put_char
-    LDA #exploded_bullet    
+    LDA #exploded_bullet
     LDX tmp_X
     STA bullets, x
     INX
     INX
-    INX 
+    INX
     LDA #explosion_frame_1
     STA bullets, x
 
     ; save new hits point
 ++
     LDY tmp_Y
-    INY 
+    INY
     INY
     INY
     INY
@@ -287,17 +287,17 @@
     CPX bullet_x
     BEQ +
     RTS
-+    
++
     ; right
     CPY bullet_y
     BEQ ++
-    INY 
+    INY
     CPY bullet_y
     BEQ ++
-    INY 
+    INY
     CPY bullet_y
     BEQ ++
-    INY 
+    INY
     CPY bullet_y
     BEQ ++
     RTS
@@ -315,22 +315,19 @@ enemy_initial_x
 enemy_initial_y
     !byte $01
 
-.f_check_generator_bullet_collision    
-    
-    LDA #$00 ; no hit
-    
-    INY    
-    ; LDA #wall
-    ; JSR .f_put_char 
+.f_check_generator_bullet_collision
 
-        
+    LDA #$00 ; no hit
+
+    ; left side
+    INY    
     CPX bullet_x
     BNE +
     CPY bullet_y
     BEQ ++
 +
     DEY
-    INX 
+    INX
     CPX bullet_x
     BNE +
     CPY bullet_y
@@ -361,33 +358,59 @@ enemy_initial_y
     CPX bullet_x
     BNE +
     CPY bullet_y
-    BEQ ++
+    BNE + ; jump to right side
+++  
+    ; collision detect
+    LDA #$01
+    RTS
+
 +
     ; right side
     INY
     INY
-    INY
     CPX bullet_x
     BNE +
     CPY bullet_y
     BEQ ++
 +
-
-    ; DEY
-    ; INX
-    ; CPX bullet_x
-    ; BEQ +
-    ; CPY bullet_y
-    ; BEQ ++
-
+    DEX 
+    INY   
+    INY
+    INY
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++    
++
+    DEX     
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++    
++
+    DEX     
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++    
++
+    DEX         
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++    
++
+    DEX
+    DEY         
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
     RTS
-++
-    ; LDA #wall
-    ; JSR .f_put_char 
-
+++  
     LDA #$01
-
     RTS
 
 .f_check_summoner_bullet_collision
     RTS
+

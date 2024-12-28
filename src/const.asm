@@ -20,23 +20,23 @@ sprite_enemy_killed = $1B
 
 
 ; bullet chars
-bullet_high = $2F
-bullet = $30
-bullet_low = $31
+bullet_high = $46
+bullet = $47
+bullet_low = $48
 
-bullet_high_right_powerup = $32
-bullet_right_powerup = $33
-bullet_low_right_powerup = $34
+bullet_high_right_powerup = $49
+bullet_right_powerup = $4A
+bullet_low_right_powerup = $4B
 
-bullet_high_left_powerup = $35
-bullet_left_powerup = $36
-bullet_low_left_powerup = $37
+bullet_high_left_powerup = $4C
+bullet_left_powerup = $4D
+bullet_low_left_powerup = $4E
 
 ; explosion char
-explosion_frame_1 = $38
-explosion_frame_2 = $39
-explosion_frame_3 = $3A
-exploxion_end = $3B
+explosion_frame_1 = $4F
+explosion_frame_2 = $50
+explosion_frame_3 = $51
+exploxion_end = $52
 
 ; bullet types
 free_bullet = $00
@@ -44,12 +44,12 @@ active_bullet = $01
 exploded_bullet = $02
 
 ; level 
-empty = $20
-wall = $29
+empty = $3F
+wall = $40
 
 ; level customization
-powerup = $3C
-barrier = $3D
+powerup = $53
+barrier = $54
 
 border_color = $00
 

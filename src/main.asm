@@ -9,10 +9,10 @@
 !bin "../resources/sprites.bin"
 
 *= $2800
-!bin "../resources/chars.bin"
+!bin "../resources/hero_charset.bin"
 
 *= $5000
-!bin "../resources/level_1.bin"
+!bin "../resources/hero_levels_uncompressed.bin"
 
 
 *=$0801
@@ -345,11 +345,11 @@ draw_room_last_line
     LDA current_level
     CMP #$01
     BNE +
-    JSR .f_customer_room_level_1    
+    JSR .f_customize_room_level_1    
 +
     RTS
 
-.f_customer_room_level_1
+.f_customize_room_level_1
     LDA current_room
     CMP #06
     BNE +
@@ -415,8 +415,6 @@ color_loop
     CPX #250
     bne color_loop
     RTS
-
-
 
 .f_get_shooting_char
     JSR .f_get_hero_sprite_row_column
@@ -707,7 +705,7 @@ hit
     LDA #01
     JMP f_check_backgroud_collision_end
 set_powerup
-    LDA #20
+    LDA #empty
     JSR .f_put_char
     INC hero_powerup
     LDA #00 ; no collision

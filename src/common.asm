@@ -42,7 +42,7 @@
     JMP ++++
     LDA #$00 ; force 0
 ++++
-    TAY
+    TAY ; comlum
 
 ; calculate row
 +++++
