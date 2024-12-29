@@ -1,29 +1,33 @@
-def compress_file(input_file, output_file):
-    with open(input_file, 'rb') as f:
-        input_bytes = f.read()
+def compress_hero_levels(input_file, output_file):
+    # Apriamo il file di input in modalità lettura binaria
+    with open(input_file, 'rb') as infile:
+        # Apriamo il file di output in modalità scrittura binaria
+        with open(output_file, 'wb') as outfile:
+            # Leggiamo il contenuto del file di input
+            data = infile.read()
+            
+            # Verifica che il numero di byte sia multiplo di 8
+            if len(data) % 8 != 0:
+                print("Il file di input non ha un numero di byte multiplo di 8")
+                return
+            
+            # Processiamo ogni blocco di 8 byte
+            for i in range(0, len(data), 8):
+                # Prendiamo il blocco di 8 byte
+                block = data[i:i+8]
+                
+                # Inizializziamo il byte compresso a 0
+                compressed_byte = 0
+                
+                # Esaminiamo ogni byte del blocco
+                for j, byte in enumerate(block):
+                    if byte == 0x40:  # Se il byte è 0x40, imposta il bit corrispondente a 1
+                        compressed_byte |= (1 << (7 - j))
+                    elif byte == 0x39:  # Se il byte è 0x39, imposta il bit corrispondente a 0
+                        compressed_byte &= ~(1 << (7 - j))
+                
+                # Scriviamo il byte compresso nel file di output
+                outfile.write(bytes([compressed_byte]))
 
-    compressed_bytes = bytearray()
-    current_byte = 0
-    bit_count = 0
-
-    for bit in input_bytes:
-        current_byte = (current_byte << 1) | bit
-        bit_count += 1
-
-        if bit_count == 8:
-            compressed_bytes.append(current_byte)
-            current_byte = 0
-            bit_count = 0
-
-    if bit_count > 0:
-        compressed_bytes.append(current_byte << (8 - bit_count))
-
-    with open(output_file, 'wb') as f:
-        f.write(compressed_bytes)
-
-if __name__ == "__main__":
-    input_file = "level_1.bin"  # Replace with your input file
-    output_file = "level_1.bin.c"  # Replace with your output file
-
-    compress_file(input_file, output_file)
-    print(f"Compressione completata. File compresso salvato come {output_file}")
+# Eseguiamo la compressione
+compress_hero_levels('hero_levels_uncompressed.bin', 'hero_levels_compressed.bin')

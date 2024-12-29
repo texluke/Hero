@@ -3,7 +3,7 @@
 ; by Tex, 2024
 
 *= $1000
-!bin "../resources/music.sid",,126
+!bin "../resources/Chubby_Chubby_SID_Chip.sid",,126
 
 *= $2000
 !bin "../resources/sprites.bin"
@@ -32,7 +32,7 @@ border_width_y
 
 
 main
-    jsr $1003
+    jsr $1000
 
     ; set font at $2800
     LDA $D018
@@ -290,9 +290,11 @@ draw_room_loop_1
      ; first video zone
     LDA ($FB), y
     CPY #$00
-    BNE +
-    TXA
-+    
+    BNE +    
+    LDA #$31
+    JSR .f_inc_X
+    TXA ; print level number in 0,0
++        
     STA $0400, y
     DEY
     BNE draw_room_loop_1
@@ -302,10 +304,10 @@ draw_room_loop_1
 draw_room_loop_2
     ; second video zone
     LDA ($FB), y
-    CMP #$00
-    BNE +
-    LDA #empty
-+    
+;     CMP #$00
+;     BNE +
+;     LDA #empty
+; +    
     STA $0500, y
     DEY
     BNE draw_room_loop_2
@@ -315,10 +317,10 @@ draw_room_loop_2
 draw_room_loop_3
     ; third video zone
     LDA ($FB), y
-    CMP #$00
-    BNE +
-    LDA #empty
-+        
+;     CMP #$00
+;     BNE +
+;     LDA #empty
+; +        
     STA $0600, y
     DEY
     BNE draw_room_loop_3
@@ -330,10 +332,10 @@ draw_room_loop_4
     CPY #$E8
     BCS draw_room_last_line
     LDA ($FB), y
-    CMP #$00
-    BNE +
-    LDA #empty
-+    
+;     CMP #$00
+;     BNE +
+;     LDA #empty
+; +    
     STA $0700, y
 draw_room_last_line
     DEY
