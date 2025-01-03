@@ -236,7 +236,7 @@
     CMP #$00
     BNE +
 
-    ; enemy killed, show explosion
+    ; enemy destroyed, show explosion
     LDX bullet_x
     LDY bullet_y
     LDA #empty
@@ -246,6 +246,7 @@
     STY enemy_array_index
     LDA #sprite_exposion_frame_1
     JSR .f_update_enemy_sprite
+    JSR .f_post_enemy_destroyed
     JMP ++ ; update remaining hits to zero
 +
     ; enemy hit, show impact explosion
@@ -271,6 +272,18 @@
     INY
     LDA enemy_hits
     STA enemies, y
+    RTS
+
+
+.f_post_enemy_destroyed
+    LDA enemy_sprite
+    CMP #generator
+    BNE +
+    LDA #$01
+    STA generator_destroyed
+    BEQ ++
+    RTS 
++
     RTS
 
 .f_check_generic_enemy_bullet_collision
@@ -319,28 +332,28 @@ enemy_initial_y
 
     LDA #$00 ; no hit
 
-    ; left side
+    ; left side (top)
     INY    
-    CPX bullet_x
-    BNE +
-    CPY bullet_y
-    BEQ ++
-+
-    DEY
-    INX
-    CPX bullet_x
-    BNE +
-    CPY bullet_y
-    BEQ ++
-+
-    DEY
-    INX
-    CPX bullet_x
-    BNE +
-    CPY bullet_y
-    BEQ ++
-+
     INY
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    DEY
+    INX
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++
+    DEY
+    INX
+    CPX bullet_x
+    BNE +
+    CPY bullet_y
+    BEQ ++
++    
     INX
     CPX bullet_x
     BNE +
@@ -353,6 +366,8 @@ enemy_initial_y
     CPY bullet_y
     BEQ ++
 +
+    
+    INY
     INY
     INX
     CPX bullet_x
@@ -368,15 +383,14 @@ enemy_initial_y
     ; right side
     INY
     INY
+    INY
     CPX bullet_x
     BNE +
     CPY bullet_y
     BEQ ++
 +
     DEX 
-    INY   
-    INY
-    INY
+    INY       
     CPX bullet_x
     BNE +
     CPY bullet_y

@@ -15,15 +15,12 @@ tmp_Y
 
 ; Room
 current_room 
-    !byte $01
+    !byte $08
 
 refresh_room  ; set to $01 if screen need to be refreshed
     !byte $01
 
-barrier_opened
-    !byte $00
-
-genertor_destroyed
+generator_destroyed
     !byte $00
 
 ; joystick variables
@@ -120,11 +117,11 @@ enemies_sprite_clear_mask
 enemies_level_1    
     !byte $01,      $01
         ;       SPRITE             X       Y       MSB      STRETCHED
-        !byte   generator,         $BF,    $67,    $00,     $01
+        !byte   generator,         $3F,    $6A,    $00,     $01
     !byte $02,      $02               
         ;       SPRITE             X       Y       MSB      STRETCHED
-        !byte   reaver_inactive,   $3A,    $8A,    $00,     $00            
-        !byte   hunter_inactive,   $A4,    $80,    $00,     $00                    
+        !byte   reaver_inactive,   $3A,    $8A,    $00,     $00
+        !byte   hunter_inactive,   $A4,    $80,    $00,     $00
     !byte $03,      $02        
         ;       SPRITE             X       Y       MSB      STRETCHED
         !byte   drone_inactive,    $00,    $62,    $01,     $00   

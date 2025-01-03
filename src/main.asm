@@ -367,7 +367,7 @@ draw_room_last_line
 +   ; next room  
     CMP #$05
     BNE +
-    LDA barrier_opened
+    LDA generator_destroyed
     CMP #$01
     BEQ +++
     LDA #barrier

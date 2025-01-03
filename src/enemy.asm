@@ -98,6 +98,21 @@ enemies_positioning_completed
     ; SPRITE #
     INY
     LDA ($FB), y
+    STA enemy_sprite
+    CMP #generator
+    BNE +
+    LDA generator_destroyed
+    CMP #$01
+    BNE +
+    ; skip sprite
+    INY
+    INY
+    INY
+    INY
+    INY
+    RTS
++
+    LDA enemy_sprite
     JSR .f_store_enemy_data
     CLC
     ADC #$80
@@ -150,7 +165,7 @@ no_stretched
     ORA enemies_sprite_mask, x
     STA $D015
     ; Enemy hits
-    LDA #$40
+    JSR .f_get_enemy_hits ; in A hit points
     JSR .f_store_enemy_data
 
     ; Print sprite index
@@ -161,6 +176,42 @@ no_stretched
     ; JSR .f_put_char
     ; LDX tmp_X
     ; LDY tmp_Y
+    RTS
+
+; Return enemy hits point according to the enemy type
+.f_get_enemy_hits
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    LDA #$04
+    RTS
++
+    CMP #reaver_inactive
+    BNE +
+    LDA #$08
+    RTS
++
+    CMP #crusher_inactive
+    BNE +
+    LDA #$10
+    RTS
++
+    CMP #hunter_inactive
+    BNE +
+    LDA #$20
+    RTS
++
+    CMP #summoner
+    BNE +
+    LDA #$20
+    RTS
++
+    CMP #generator
+    BNE +
+    LDA #$40 // 64
+    RTS    
++
+    LDA #$04
     RTS
 
 .f_store_enemy_data
@@ -251,16 +302,9 @@ no_stretched
     INC enemy_index
     JMP -
 
-move_enemy_end;
-    ; drone can
-    LDX drone_move_wait
-    CPX #$FF
-    BEQ +
-    RTS
-+    
-    LDX drone_move_wait_inital_value
-    STX drone_move_wait
-    RTS
+; ******************
+; ** LEFT & RIGHT **
+; ******************
 
 .f_move_enemy_left_right
     ; LEFT / RIGHT
@@ -278,34 +322,6 @@ move_enemy_right
 +
     RTS
 
-.f_move_enemy_up_down
-    ; UP / DOWN
-    LDA hero_row
-    CMP enemy_row
-    BEQ + ; skip equal
-    BPL move_enemy_up ; hero_row >= enemy_rot    
-    ; move enemy down
-    LDX enemy_row
-    LDY enemy_column
-    JSR .f_get_char
-    CMP #wall
-    BEQ +
-    INY 
-    JSR .f_get_char
-    CMP #wall
-    BEQ +
-    INY 
-    JSR .f_get_char
-    CMP #wall
-    BEQ +
-    JSR .f_move_enemy_up
-    JMP +
-move_enemy_up
-    ; move enemy up
-    JSR .f_move_enemy_down 
-+
-    RTS
-
 .f_move_enemy_left
     LDA enemy_sprite
     CMP #drone_inactive
@@ -320,7 +336,6 @@ move_enemy_up
     LDA #reaver_left    
     JSR .f_activate_enemy_sprite
     RTS
-
 +
     ; DRONE
     ; to be rotated
@@ -409,59 +424,6 @@ move_enemy_up
 
     RTS
 
-.f_move_enemy_down
-    LDA enemy_sprite
-    CMP #drone_inactive
-    BNE +
-    RTS
-+
-    CMP #reaver_inactive
-    BNE +
-    RTS
-+
-    CMP #drone_left
-    BEQ ++
-    CMP #drone_right 
-    BNE +++    
-++
-    LDA drone_move_wait
-    CMP #$FF
-    BEQ +
-    RTS
-+
-    JSR .f_move_down_enemy_sprite
-    RTS
-+++
-    JSR .f_move_down_enemy_sprite
-    ; check next enemy type
-    RTS
-
-.f_move_enemy_up
-    LDA enemy_sprite
-    CMP #drone_inactive
-    BNE +
-    RTS
-+
-    CMP #reaver_inactive
-    BNE +
-    RTS
-+
-    CMP #drone_left
-    BEQ ++
-    CMP #drone_right 
-    BNE +++    
-++
-    LDA drone_move_wait
-    CMP #$FF
-    BEQ +
-    RTS
-+
-    JSR .f_move_up_enemy_sprite
-    RTS
-+++
-    JSR .f_move_up_enemy_sprite
-    ; check next enemy type
-    RTS
 
 .f_move_left_enemy_sprite
     STA tmp_A
@@ -531,6 +493,114 @@ move_enemy_up
     LDA tmp_A
     RTS
 
+; ***************
+; ** UP & DOWN **
+; ***************
+.f_move_enemy_up_down
+    ; UP / DOWN
+    LDA hero_row
+    CMP enemy_row
+    BEQ + ; skip equal
+    BPL move_enemy_down ; hero_row >= enemy_row => down
+    ; move enemy up
+    LDX enemy_row
+    LDY enemy_column
+    ;JSR .f_put_char
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    INY 
+    ;JSR .f_put_char
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    INY 
+    ;JSR .f_put_char
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    JSR .f_move_enemy_up
+    JMP +
+move_enemy_down
+    ; move enemy down
+    LDX enemy_row
+    LDY enemy_column
+    INX
+    INX
+    INX
+    ;JSR .f_put_char
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    INY 
+    ;JSR .f_put_char
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    INY 
+    ;JSR .f_put_char
+    JSR .f_get_char
+    CMP #wall
+    BEQ +
+    JSR .f_move_enemy_down
++
+    RTS
+
+.f_move_enemy_down
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    RTS
++
+    CMP #reaver_inactive
+    BNE +
+    RTS
++
+    CMP #drone_left
+    BEQ ++
+    CMP #drone_right 
+    BNE +++    
+++
+    LDA drone_move_wait
+    CMP #$FF
+    BEQ +
+    RTS
++
+    JSR .f_move_down_enemy_sprite
+    RTS
++++
+    JSR .f_move_down_enemy_sprite
+    ; check next enemy type
+    RTS
+
+.f_move_enemy_up
+    LDA enemy_sprite
+    CMP #drone_inactive
+    BNE +
+    RTS
++
+    CMP #reaver_inactive
+    BNE +
+    RTS
++
+    CMP #drone_left
+    BEQ ++
+    CMP #drone_right 
+    BNE +++    
+++
+    LDA drone_move_wait
+    CMP #$FF
+    BEQ +
+    RTS
++
+    JSR .f_move_up_enemy_sprite
+    RTS
++++
+    JSR .f_move_up_enemy_sprite
+    ; check next enemy type
+    RTS
+
+
 .f_move_down_enemy_sprite
     STA tmp_A
     LDA enemy_index    
@@ -579,6 +649,17 @@ move_enemy_up
     STA enemies, y    
 
     LDA tmp_A
+    RTS
+
+move_enemy_end;
+    ; drone can
+    LDX drone_move_wait
+    CPX #$FF
+    BEQ +
+    RTS
++    
+    LDX drone_move_wait_inital_value
+    STX drone_move_wait
     RTS
 
 .f_activate_enemy_sprite
